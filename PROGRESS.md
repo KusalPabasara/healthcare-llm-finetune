@@ -40,7 +40,9 @@ Record these once, then never change them mid-sprint. Drift here invalidates the
 - [x] ~~Kaggle API key~~ — Kaggle dropped as platform; key still worth expiring
 - [x] Colab notebook open, **Runtime → Change runtime type → T4 GPU**
 - [x] Drive mounted (first cell, every session)
-- [x] Install `requirements.txt` → `verify_env.py` passes (incl. real GPU 4-bit matmul)
+- [x] Install `requirements.txt`
+- [~] `verify_env.py` — last recorded run exited 1 (bitsandbytes had no cu128 binary).
+      **Re-run after the 0.46.1 install + restart to confirm the GPU 4-bit matmul.**
 - [x] Record GPU type + compute dtype in Frozen decisions
 - [x] **Pin exact versions → `requirements.txt`** (silent bumps change later numbers)
 - [x] Create project folder structure
@@ -48,10 +50,10 @@ Record these once, then never change them mid-sprint. Drift here invalidates the
 - [x] Automate download → `scripts/download_data.py` (tested: 187,005 + 1,000 rows)
 - [x] Provenance + licence check automated → regenerates `data/raw/SOURCES.md`
 - [x] Checksum generation + `--verify` tamper detection (both tested)
-- [ ] **Run it on Colab** — the notebook writes data/raw straight to Drive
+- [x] **Run it on Colab** — 143M medmcqa + 2.2M pubmedqa on Drive, checksums verified
 - [x] Write README + `docs/platform.md`
 - [x] Build the Day 1 notebook → `notebooks/day1_setup.py` (validated nbformat)
-- [ ] Data written to Drive (**nothing in /content survives a disconnect**)
+- [x] Data written to Drive at `MyDrive/healthcare-llm/data/raw/` — survives disconnects
 - [x] GitHub token ready for the private-repo clone (entered via getpass)
 - [ ] **Lead:** post exact versions + folder layout to team channel, ask all lanes to match
 
