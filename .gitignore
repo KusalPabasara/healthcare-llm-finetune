@@ -48,3 +48,4 @@ venv/
 Thumbs.db
 .vscode/
 .idea/
+.kaggle-push/
