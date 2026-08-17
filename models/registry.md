@@ -1,7 +1,9 @@
 # Model Registry
 
-Every trained artifact, one row. Weights live in private Kaggle Datasets
-(`<username>/healthcare-<artifact>`); this file is the index.
+Every trained artifact, one row. Weights live on Drive at
+`MyDrive/healthcare-llm/models/<artifact>/`; this file is the index.
+`scripts/save_artifact.py` appends a machine-readable row to `artifacts.jsonl`
+alongside them.
 
 Fill a row the moment a training run finishes — reconstructing this on Day 12 from memory
 is how details get lost.

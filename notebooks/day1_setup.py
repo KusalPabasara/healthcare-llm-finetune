@@ -1,11 +1,11 @@
 """Day 1 — Environment Setup + Data Collection (KAN-11)
 
-Source for the Kaggle notebook. Pushed via scripts/sync_notebook.py.
-Run top to bottom; no manual steps beyond attaching the repo and pressing Run.
+Source for the Colab notebook. Build with:
+    python scripts/build_notebook.py notebooks/day1_setup.py
 
-Requires: GitHub repo attached as a Kaggle dataset/utility script, or the repo
-cloned in the first cell. Secrets KAGGLE_USERNAME and KAGGLE_KEY set via
-Add-ons > Secrets for the artifact push.
+Then open the .ipynb in Colab (or via the GitHub tab) and Run All.
+Everything is automated; the only manual steps are authorising the Drive
+mount and, for a private repo, pasting a GitHub token when prompted.
 """
 
 # %% [markdown]
@@ -13,81 +13,115 @@ Add-ons > Secrets for the artifact push.
 #
 # **KAN-11** · Healthcare lane · Qwen + Llama
 #
-# Runs end to end without intervention:
+# Runs end to end:
 #
-# 1. Clone the repo and install pinned dependencies
-# 2. Verify GPU, pins, and 4-bit quantization
-# 3. Download MedMCQA (Apache-2.0) and PubMedQA (MIT)
-# 4. Checksum the raw data
-# 5. Push everything to a private Kaggle Dataset — `/kaggle/working` is wiped at session end
+# 1. Mount Drive (everything persists there — `/content` vanishes on disconnect)
+# 2. Clone the repo and install pinned dependencies
+# 3. Verify GPU, pins, and 4-bit quantization
+# 4. Download MedMCQA (Apache-2.0) and PubMedQA (MIT) straight to Drive
+# 5. Checksum the raw data and print samples as evidence
 #
 # Datasets were chosen for licence as much as content. ChatDoctor (no licence)
 # and MedQuAD (CC BY-SA share-alike) were excluded — see `data/raw/SOURCES.md`.
+#
+# **Runtime → Change runtime type → T4 GPU** before running.
 
 # %%
-# --- 1. Repo + dependencies ---------------------------------------------
-# The repo is private, so cloning needs a token. Set GITHUB_TOKEN in
-# Add-ons > Secrets, or attach the repo through Kaggle's GitHub import.
+# --- 1. Mount Drive ------------------------------------------------------
+# First cell, every session. Colab can disconnect at any time and /content
+# is wiped when it does; Drive is what survives.
+
+from google.colab import drive
+
+drive.mount("/content/drive")
+
+from pathlib import Path
+
+DRIVE = Path("/content/drive/MyDrive/healthcare-llm")
+DRIVE.mkdir(parents=True, exist_ok=True)
+print(f"project root: {DRIVE}")
+
+# %%
+# --- 2. Repo + dependencies ---------------------------------------------
+# The repo is private. getpass keeps the token out of the notebook output,
+# so a shared notebook never leaks it.
 
 import os
 import subprocess
-from pathlib import Path
+from getpass import getpass
 
 REPO = "KusalPabasara/healthcare-llm-finetune"
-WORK = Path("/kaggle/working")
-PROJECT = WORK / "healthcare-llm-finetune"
+PROJECT = Path("/content/healthcare-llm-finetune")
 
 
 def sh(cmd, **kw):
-    """Run a shell command, streaming output."""
     print(f"$ {cmd}")
     return subprocess.run(cmd, shell=True, check=False, **kw)
 
 
 if not PROJECT.exists():
-    try:
-        from kaggle_secrets import UserSecretsClient
-
-        token = UserSecretsClient().get_secret("GITHUB_TOKEN")
-        sh(f"git clone -q https://{token}@github.com/{REPO}.git {PROJECT}")
-    except Exception as exc:  # noqa: BLE001
-        print(f"Secret GITHUB_TOKEN unavailable ({type(exc).__name__}).")
-        print("Falling back to public clone — will fail if the repo is private.")
-        sh(f"git clone -q https://github.com/{REPO}.git {PROJECT}")
+    token = getpass("GitHub token (input hidden): ").strip()
+    result = sh(
+        f"git clone -q https://{token}@github.com/{REPO}.git {PROJECT}",
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        # Never echo the command — it contains the token.
+        raise SystemExit("clone failed: check the token has repo scope")
+    del token
 
 os.chdir(PROJECT)
-print(f"\nworking in {Path.cwd()}")
+print(f"working in {Path.cwd()}")
 
 # %%
-# Kaggle images ship most of this already; installing pinned versions keeps
-# results reproducible across sessions and across the team's lanes.
+# Colab ships older versions of most of these. Installing the pins keeps
+# results reproducible across sessions and comparable across the team's lanes.
 sh("pip install -q -r requirements.txt")
 
 # %%
-# --- 2. Verify the environment ------------------------------------------
+# --- 3. Verify the environment ------------------------------------------
 # Fails loudly on version drift, missing GPU, or a broken 4-bit config.
 # Do not proceed to Day 2 on a failure here.
+#
+# Note: pip may warn about needing a restart. If verify_env.py reports version
+# drift, use Runtime > Restart session, then re-run from this cell.
 
 result = sh("python scripts/verify_env.py")
 if result.returncode != 0:
     raise SystemExit("Environment verification failed — fix before continuing.")
 
 # %%
-# --- 3. Download the datasets -------------------------------------------
-# Writes data/raw/ (read-only for the rest of the sprint), regenerates
-# SOURCES.md with provenance and licences, and writes CHECKSUMS.txt.
+# --- 4. Download the datasets -------------------------------------------
+# Written straight to Drive so a disconnect does not cost the 140MB download.
+# data/raw/ is the reproducibility anchor: read-only for the rest of the sprint.
+
+RAW = DRIVE / "data" / "raw"
+RAW.mkdir(parents=True, exist_ok=True)
+
+# Point the repo's data/raw at Drive, so scripts stay path-agnostic.
+local_raw = PROJECT / "data" / "raw"
+if local_raw.is_symlink():
+    local_raw.unlink()
+elif local_raw.exists():
+    import shutil
+
+    shutil.rmtree(local_raw)
+local_raw.parent.mkdir(parents=True, exist_ok=True)
+local_raw.symlink_to(RAW)
+print(f"data/raw -> {RAW}")
 
 sh("python scripts/download_data.py")
 
 # %%
-# --- 4. Inspect what landed ---------------------------------------------
-# A sample from each dataset, so the notebook output is evidence the data
-# is real and correctly shaped rather than an empty success message.
+# --- 5. Inspect what landed ---------------------------------------------
+# A sample row from each dataset — evidence the data is real and correctly
+# shaped, rather than an empty success message.
 
 import json
 
 for name in ("medmcqa", "pubmedqa"):
-    path = Path("data/raw") / name / "train.jsonl"
+    path = RAW / name / "train.jsonl"
     if not path.exists():
         print(f"{name}: MISSING")
         continue
@@ -100,27 +134,22 @@ for name in ("medmcqa", "pubmedqa"):
         print(f"  {k:<16} {s[:90]}{'...' if len(s) > 90 else ''}")
 
 # %%
-# --- 5. Push to a private Kaggle Dataset --------------------------------
-# /kaggle/working is wiped when the session ends. This is the step that makes
-# Day 1 durable — without it the download must be repeated tomorrow.
+# --- 6. Confirm persistence ---------------------------------------------
+# The whole point of writing to Drive. If this shows files, Day 2 can attach
+# them without re-downloading.
 
-from kaggle_secrets import UserSecretsClient
-
-secrets = UserSecretsClient()
-os.environ["KAGGLE_USERNAME"] = secrets.get_secret("KAGGLE_USERNAME")
-os.environ["KAGGLE_KEY"] = secrets.get_secret("KAGGLE_KEY")
-
-sh("python scripts/push_artifacts.py --name raw-data --path data/raw "
-   "--note 'Day 1 raw datasets: medmcqa + pubmedqa'")
+sh(f"du -sh {RAW}/* 2>/dev/null")
+sh(f"python scripts/download_data.py --verify")
 
 # %%
 # --- Day 1 complete ------------------------------------------------------
-print("""
-Day 1 done. Recorded for PROGRESS.md frozen decisions:
+print(f"""
+Day 1 done. Record in PROGRESS.md frozen decisions:
   - GPU type and compute dtype (from verify_env.py above)
-  - Dataset row counts and licences (data/raw/SOURCES.md)
-  - Raw data checksums (data/raw/CHECKSUMS.txt)
+  - Dataset row counts and licences ({RAW}/SOURCES.md)
+  - Raw data checksums ({RAW}/CHECKSUMS.txt)
+
+Data is on Drive at {RAW} and survives disconnects.
 
 Next: Day 2 (KAN-15) — cleaning, instruction formatting, 80/10/10 split.
-Attach dataset `healthcare-raw-data` as input rather than re-downloading.
 """)

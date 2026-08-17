@@ -1,9 +1,8 @@
 """Verify the training environment before Day 2.
 
-Run this in a Kaggle notebook after installing requirements.txt. It checks the
-GPU is visible, the pinned libraries imported at the versions we pinned, and
-that persistence paths exist. Prints a block to paste into PROGRESS.md's
-frozen decisions.
+Run this in Colab after installing requirements.txt. It checks the GPU is
+visible, the pinned libraries imported at the versions we pinned, and that
+Drive is mounted. Prints a block to paste into PROGRESS.md's frozen decisions.
 
     python scripts/verify_env.py
 """
@@ -23,12 +22,11 @@ PINNED = {
     "trl": "0.13.0",
 }
 
-KAGGLE_WORKING = Path("/kaggle/working")
-KAGGLE_INPUT = Path("/kaggle/input")
+DRIVE = Path("/content/drive/MyDrive/healthcare-llm")
 
 
-def on_kaggle():
-    return KAGGLE_WORKING.exists() or "KAGGLE_KERNEL_RUN_TYPE" in os.environ
+def on_colab():
+    return Path("/content").exists() or "COLAB_GPU" in os.environ
 
 
 def check_versions():
@@ -65,7 +63,7 @@ def check_gpu():
     print(f"  torch            {torch.__version__}")
     if not torch.cuda.is_available():
         print("  FAIL  no CUDA device")
-        print("        Kaggle: Settings > Accelerator > GPU P100 (or T4 x2)")
+        print("        Colab: Runtime > Change runtime type > T4 GPU")
         return False, {"torch": torch.__version__}
 
     count = torch.cuda.device_count()
@@ -78,16 +76,14 @@ def check_gpu():
 
     # Two 4-bit models plus LoRA is tight on a single 16 GiB card.
     # Worth knowing on Day 1, not mid-run on Day 4.
-    if count >= 2:
-        print(f"  note             {count} GPUs — Qwen and Llama CAN run in parallel")
-    elif total < 20:
+    if total < 20:
         print(f"  note             run Qwen and Llama SEQUENTIALLY on {total:.0f} GiB")
 
-    if "P100" in name:
-        print("  note             P100 has no bf16 — use fp16 compute dtype")
-        info["compute_dtype"] = "fp16"
-    else:
-        info["compute_dtype"] = "bf16"
+    # bf16 needs Ampere or newer. The T4 is Turing (compute 7.5), so fp16.
+    supports_bf16 = torch.cuda.get_device_capability(0)[0] >= 8
+    info["compute_dtype"] = "bf16" if supports_bf16 else "fp16"
+    if not supports_bf16:
+        print(f"  note             {name} has no bf16 — use fp16 compute dtype")
 
     return True, info
 
@@ -117,46 +113,46 @@ def check_persistence():
     print("\nPersistence")
     print("-" * 52)
 
-    if not on_kaggle():
-        print("  note  not on Kaggle (expected when running locally)")
+    if not on_colab():
+        print("  note  not on Colab (expected when running locally)")
         return True
 
-    print(f"  ok    working dir  {KAGGLE_WORKING}")
-    print("  WARN  /kaggle/working is WIPED when the session ends.")
-    print("        Push adapters to a Kaggle Dataset before the session closes:")
-    print("        python scripts/push_artifacts.py --name qwen-v1 --path /kaggle/working/qwen-v1")
+    mount = Path("/content/drive/MyDrive")
+    if not mount.exists():
+        print("  FAIL  Drive is not mounted — nothing will survive a disconnect")
+        print("        from google.colab import drive; drive.mount('/content/drive')")
+        return False
 
-    if KAGGLE_INPUT.exists():
-        attached = sorted(p.name for p in KAGGLE_INPUT.iterdir())
-        if attached:
-            print(f"  ok    attached inputs: {', '.join(attached)}")
-        else:
-            print("  note  no datasets attached yet")
+    print(f"  ok    Drive mounted at {mount}")
 
-    # Kaggle credentials — presence only, never print the value.
-    cred = Path.home() / ".kaggle" / "kaggle.json"
-    if cred.exists() or "KAGGLE_KEY" in os.environ:
-        print("  ok    Kaggle API credentials found")
+    if DRIVE.exists():
+        print(f"  ok    project dir  {DRIVE}")
+        raw = DRIVE / "data" / "raw"
+        if raw.exists():
+            sets = sorted(p.name for p in raw.iterdir() if p.is_dir())
+            if sets:
+                print(f"  ok    staged data: {', '.join(sets)}")
     else:
-        print("  MISS  no Kaggle API credentials — needed to push artifacts")
-        print("        Add via notebook Secrets, or place ~/.kaggle/kaggle.json")
+        print(f"  note  {DRIVE} not created yet")
 
+    print("  WARN  /content is wiped on disconnect. Checkpoint to Drive:")
+    print(f"        output_dir='{DRIVE}/checkpoints/<artifact>', save_steps=100")
     return True
 
 
 def check_session_budget():
-    """Kaggle gives 30 GPU-hours/week. Eight training runs must fit."""
-    print("\nSession budget")
+    """Colab free tier disconnects. Plan around it rather than being surprised."""
+    print("\nSession limits")
     print("-" * 52)
-    print("  Kaggle free tier: 30 GPU-hours/week, 9h max per session")
+    print("  Colab free tier: ~4h typical, can disconnect sooner")
     print("  Sprint needs 8 training runs (2 models x 4 versions)")
-    print("  Budget ~3h/run to stay inside the weekly quota")
-    print("  Check your remaining quota at kaggle.com/settings")
+    print("  Run models SEQUENTIALLY and checkpoint every ~100 steps to Drive")
+    print("  On a drop, resume with resume_from_checkpoint=True")
 
 
 def main():
     print(f"Python {platform.python_version()} on {platform.system()}")
-    print(f"Platform: {'Kaggle' if on_kaggle() else 'local'}\n")
+    print(f"Platform: {'Colab' if on_colab() else 'local'}\n")
 
     versions_ok, found = check_versions()
     gpu_ok, gpu_info = check_gpu()
