@@ -4,6 +4,7 @@
 **Owner:** Kusal Pabasara (also team lead across industry lanes)
 **Sprint:** Mon 17 Aug 2026 → Tue 1 Sep 2026 (12 working days)
 **Models:** Qwen-Healthcare + Llama-Healthcare · QLoRA r16/α32, 4-bit
+**Platform:** Kaggle Notebooks (9h sessions, 30 GPU-h/week) — see `docs/kaggle-setup.md`
 **Plan:** https://claude.ai/code/artifact/7334fb01-cae1-4c94-aae5-4c260763865d
 
 > Jira due dates are `12:00 AM` of the named day = **start** of that day.
@@ -28,31 +29,41 @@ Record these once, then never change them mid-sprint. Drift here invalidates the
 | Base model IDs (Qwen / Llama) | _TBD — record from Colab_ | Day 1 |
 | GPU + VRAM | _TBD — `verify_env.py` prints it_ | Day 1 |
 | Embedding model (RAG) | _TBD_ | Day 9 |
+| Kaggle accelerator | _TBD — P100 or T4×2_ | Day 1 |
+| Compute dtype | _fp16 on P100 / bf16 on T4_ | Day 1 |
 
 ---
 
 ## Day 1 — Mon 17 Aug · KAN-11 · Environment Setup + Data Collection
 
-- [ ] Colab open, GPU enabled, Drive mounted
-- [ ] Install `transformers datasets accelerate peft bitsandbytes` → run `python scripts/verify_env.py`
+- [ ] **Expire the leaked Kaggle API key** at kaggle.com/settings, generate a new one
+- [ ] Kaggle notebook created, accelerator set (prefer **T4 ×2** — enables parallel training)
+- [ ] Add `KAGGLE_USERNAME` / `KAGGLE_KEY` via Add-ons → Secrets
+- [ ] Install `requirements.txt` → run `python scripts/verify_env.py`
+- [ ] Record GPU type + compute dtype in Frozen decisions
 - [x] **Pin exact versions → `requirements.txt`** (silent bumps change later numbers)
 - [x] Create project folder structure
-- [ ] Download healthcare datasets
+- [ ] Find/attach healthcare datasets (Kaggle hosts many natively)
 - [ ] Save raw copies to `data/raw/` — **treat as read-only for the whole sprint**
 - [ ] Record dataset licences/sources → `data/raw/SOURCES.md` (master report needs them)
 - [ ] Generate `data/raw/CHECKSUMS.txt` after download (proves raw data never changed)
-- [x] Write README
-- [ ] Back up everything to Drive
+- [x] Write README + `docs/kaggle-setup.md`
+- [ ] Push raw data to a private Kaggle Dataset (**nothing survives the session otherwise**)
 - [ ] **Lead:** post exact versions + folder layout to team channel, ask all lanes to match
 
 **Notes:**
 - Repo: https://github.com/KusalPabasara/healthcare-llm-finetune (private)
+- **Platform switched from Colab to Kaggle** — 9h sessions vs ~4h, guaranteed GPU,
+  30 GPU-h/week visible quota. Tradeoff: no Drive mount, `/kaggle/working` is wiped
+  at session end, so every artifact must be pushed to a Kaggle Dataset.
 - Pinned `transformers` to **4.57.6**, not 5.x. 5.x is current but has breaking API
   changes from 4.x that most QLoRA tutorials/peft paths don't account for yet.
   Deliberate choice — revisit after the sprint, never during.
-- `scripts/verify_env.py` checks pins + GPU + 4-bit config and prints the values to
-  paste into Frozen decisions. It exits non-zero on drift.
-- Remaining Day 1 work is Colab-side: install, download data, back up to Drive.
+- `scripts/verify_env.py` checks pins + GPU + 4-bit config + credentials, and prints
+  values to paste into Frozen decisions. Exits non-zero on drift.
+- `scripts/push_artifacts.py` pushes an adapter to a private Kaggle Dataset. Must be
+  the last cell of every training notebook.
+- **A Kaggle key was pasted into chat on 17 Aug — expire it before anything else.**
 
 ---
 
@@ -90,13 +101,16 @@ Record these once, then never change them mid-sprint. Drift here invalidates the
 
 ## Day 4 — Thu 20 Aug · KAN-24 · Running v1 Training 🖥 GPU
 
-- [ ] Decide sequential vs parallel (two 4-bit models + LoRA will likely OOM on one GPU)
-- [ ] Checkpoint-to-Drive every N steps configured (Colab disconnects)
+- [ ] Check remaining weekly GPU quota at kaggle.com/settings before starting
+- [ ] Sequential (P100) or parallel (T4 ×2 — one model per GPU)
 - [ ] Train Qwen → save as **qwen-v1**
 - [ ] Train Llama → save as **llama-v1**
+- [ ] **Push both adapters** — `push_artifacts.py --name qwen-v1 --path ...`
+- [ ] Verify pushes landed before closing the session
 - [ ] Record wall-clock training time for each (master report needs it)
+- [ ] Update `models/registry.md` with dataset slugs
 - [ ] Monitor loss + GPU memory
-- [ ] **Lead:** GPU contention across all lanes today — stagger runs, escalate quota if short
+- [ ] **Lead:** teammates on Colab hit disconnects today — share the Kaggle option
 - [ ] Use GPU wait time for teammate pipeline reviews
 
 **Notes:**
@@ -123,8 +137,10 @@ Record these once, then never change them mid-sprint. Drift here invalidates the
 
 > Weekend gap before this day — expect broken Colab state across the team.
 
+- [ ] Check weekly GPU quota — **week 2 needs 6 runs, budget ~4h each**
 - [ ] Train Qwen on `train_v2.json` → **qwen-v2**
 - [ ] Train Llama on `train_v2.json` → **llama-v2**
+- [ ] **Push both adapters before the session ends**
 - [ ] Full BLEU/ROUGE via the frozen harness
 - [ ] Manually test 30 questions
 - [ ] Document v1→v2 delta **the same day**
@@ -154,6 +170,7 @@ Record these once, then never change them mid-sprint. Drift here invalidates the
 
 - [ ] Train Qwen on `train_v3.json` → **qwen-v3**
 - [ ] Train Llama on `train_v3.json` → **llama-v3**
+- [ ] **Push both adapters before the session ends**
 - [ ] Test set + 30 manual questions
 - [ ] Compare against v2
 - [ ] **Expect flat/slightly worse plain scores** — v3 is trained to use context it isn't given yet
@@ -169,7 +186,8 @@ Record these once, then never change them mid-sprint. Drift here invalidates the
 
 - [ ] Stand up ChromaDB
 - [ ] Index healthcare documents as embeddings
-- [ ] **Persist the index to Drive** (re-embedding after a disconnect costs hours)
+- [ ] **Push the Chroma index as a Kaggle Dataset** — re-embedding costs hours, and
+      `/kaggle/working` is wiped at session end. Day 10 needs this index.
 - [ ] Sanity-check retrieval alone — junk in, junk out regardless of model quality
 - [ ] **Get ONE correct end-to-end answer before optimizing anything**
 - [ ] Full pipeline: retrieve → context → fine-tuned model → answer
@@ -184,8 +202,10 @@ Record these once, then never change them mid-sprint. Drift here invalidates the
 
 ## Day 10 — Fri 28 Aug · KAN-51 · v4 Training + RAG Testing 🖥 GPU
 
+- [ ] Attach the Day 9 Chroma index dataset as notebook input
 - [ ] Train Qwen on `train_v4.json` → **qwen-v4**
 - [ ] Train Llama on `train_v4.json` → **llama-v4**
+- [ ] **Push both adapters** — these are the artifacts the recommendation rests on
 - [ ] Test both **with RAG attached** on 100 queries
 - [ ] Document results
 - [ ] Clean, clearly-named checkpoints (last GPU day before final validation)
@@ -199,8 +219,10 @@ Record these once, then never change them mid-sprint. Drift here invalidates the
 
 > Weekend gap before this day.
 
+- [ ] **Attach all 8 adapter datasets as notebook inputs** (Kaggle allows this)
 - [ ] Load all 8 artifacts: qwen v1–v4, llama v1–v4
 - [ ] Run the **frozen** harness across every version (start the batch early — it's slow)
+- [ ] Watch the 9h session limit — 8 evaluations is a long batch; split across two sessions if needed
 - [ ] Build comparison chart: version × metric, two model series
 - [ ] Verify chart is readable by someone who wasn't in the sprint
 - [ ] **Lead:** collect other lanes' final numbers TODAY, not tomorrow
@@ -215,8 +237,9 @@ Record these once, then never change them mid-sprint. Drift here invalidates the
 - [ ] Master report: Qwen vs Llama scores, training times, dataset sizes, final metrics
 - [ ] **Recommendation written as a decision** — which model for healthcare, and why (incl. cost + inference speed, not just BLEU)
 - [ ] Include what didn't work (failed synthetic categories, the v3 dip)
-- [ ] Upload all v4 models to shared Drive
-- [ ] Master registry file: name, version, base model, training data, date, metrics, Drive path
+- [ ] Upload all v4 models to shared Drive — **KAN-59 explicitly asks for Drive**, so
+      download from Kaggle and upload, or share the Kaggle Dataset and confirm that satisfies it
+- [ ] Master registry file: name, version, base model, training data, date, metrics, path
 - [ ] **Verify uploads open from a different account** before closing
 - [ ] **Lead:** share your report structure early so all lanes arrive consistent
 

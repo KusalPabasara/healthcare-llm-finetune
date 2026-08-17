@@ -26,12 +26,23 @@ it is the comparison between them.
 
 ## Setup
 
+Training runs on **Kaggle Notebooks** (9h sessions, guaranteed P100/T4 GPUs, 30 GPU-hours
+per week). See [`docs/kaggle-setup.md`](docs/kaggle-setup.md) for the full workflow.
+
 ```bash
 pip install -r requirements.txt
+python scripts/verify_env.py     # confirms pins, GPU, 4-bit config
 ```
 
 Versions are pinned deliberately. **Do not bump them mid-sprint** — a silent change alters
 results with no visible cause and makes v1..v4 non-comparable.
+
+**Kaggle wipes `/kaggle/working` when a session ends.** Every training run must push its
+adapter before the notebook closes:
+
+```bash
+python scripts/push_artifacts.py --name qwen-v1 --path /kaggle/working/qwen-v1
+```
 
 ## Layout
 
@@ -41,7 +52,8 @@ data/raw/     original downloads — READ-ONLY for the whole sprint
 data/processed/  cleaned, split, instruction-formatted
 data/synthetic/  generated Q&A pairs (Day 5)
 scripts/      training, evaluation, data prep
-notebooks/    Colab notebooks
+notebooks/    Kaggle notebooks
+docs/         setup and workflow notes
 models/       adapters — weights live in Drive, see models/registry.md
 eval/         evaluation results and comparison tables
 reports/      daily notes and the Day 12 master report
@@ -58,6 +70,8 @@ reports/      daily notes and the Day 12 master report
 4. **The eval harness is written on Day 3 and frozen.** All eight artifacts must be scored by
    identical code, or Day 11 becomes a re-scoring marathon.
 5. **Version changes are config edits, never code edits.**
+6. **Nothing leaves a Kaggle session unpushed.** `/kaggle/working` is ephemeral — an
+   unpushed adapter is a lost training run.
 
 ## Tracking
 

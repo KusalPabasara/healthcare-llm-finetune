@@ -1,11 +1,12 @@
 # Model Registry
 
-Every trained artifact, one row. Weights live in Drive; this file is the index.
+Every trained artifact, one row. Weights live in private Kaggle Datasets
+(`<username>/healthcare-<artifact>`); this file is the index.
 
 Fill a row the moment a training run finishes — reconstructing this on Day 12 from memory
 is how details get lost.
 
-| Artifact | Base model | Version | Train data | Trained | Train time | Drive path | BLEU | ROUGE-L | Manual pass |
+| Artifact | Base model | Version | Train data | Trained | Train time | Kaggle dataset | BLEU | ROUGE-L | Manual pass |
 |---|---|---|---|---|---|---|---|---|---|
 | qwen-v1 | | v1 | `data/processed/train_v1.json` | | | | | | |
 | llama-v1 | | v1 | `data/processed/train_v1.json` | | | | | | |

@@ -19,6 +19,9 @@ protobuf==5.29.2
 # tracking
 wandb==0.19.1
 
+# platform — pushing artifacts to Kaggle Datasets (/kaggle/working is ephemeral)
+kaggle==1.6.17
+
 # evaluation
 evaluate==0.4.3
 sacrebleu==2.5.1

@@ -26,9 +26,12 @@ chroma/
 eval/runs/
 *.jsonl
 
-# Secrets
+# Secrets — never commit credentials
 .env
 *.key
+kaggle.json
+**/kaggle.json
+.kaggle/
 wandb/
 .netrc
 
