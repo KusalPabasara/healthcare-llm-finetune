@@ -98,7 +98,29 @@ def clone_private(repo: str, dest: Path, token: str):
     )
 
 
-if not PROJECT.exists():
+if PROJECT.exists():
+    # Already cloned. Pull instead — otherwise a re-run of this cell keeps
+    # running whatever code was cloned the first time, which is how you end
+    # up debugging a bug that was fixed hours ago.
+    os.chdir(PROJECT)
+    before = subprocess.run(
+        ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True
+    ).stdout.strip()
+    pull = subprocess.run(
+        ["git", "pull", "--ff-only", "-q"], capture_output=True, text=True
+    )
+    after = subprocess.run(
+        ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True
+    ).stdout.strip()
+
+    if pull.returncode != 0:
+        print(f"  pull failed: {pull.stderr.strip()[:200]}")
+        print("  continuing with the local copy — it may be out of date")
+    elif before == after:
+        print(f"  already up to date at {after}")
+    else:
+        print(f"  updated {before} -> {after}")
+else:
     tok = getpass("GitHub token (input hidden): ").strip()
     print(f"$ git clone https://github.com/{REPO}.git  (token supplied via credential helper)")
     res = clone_private(REPO, PROJECT, tok)
@@ -108,9 +130,11 @@ if not PROJECT.exists():
         # far more useful than a guess at what went wrong.
         raise SystemExit(f"clone failed:\n{res.stderr.strip()}")
     print("cloned")
+    os.chdir(PROJECT)
 
-os.chdir(PROJECT)
 print(f"working in {Path.cwd()}")
+print(subprocess.run(["git", "log", "--oneline", "-1"],
+                     capture_output=True, text=True).stdout.strip())
 
 # %%
 # Colab ships older versions of most of these. Installing the pins keeps
