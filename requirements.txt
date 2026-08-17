@@ -1,0 +1,36 @@
+# Healthcare lane — pinned environment
+# Pinned Day 1 (17 Aug 2026). DO NOT bump mid-sprint.
+# A silent version change alters training results with no visible cause,
+# and makes v1..v4 non-comparable on Day 11.
+#
+# Note: transformers 5.x is available but carries breaking API changes from 4.x.
+# Staying on the 4.57 line — it is what the peft + bitsandbytes QLoRA path
+# is best tested against. Revisit only after the sprint ships.
+
+transformers==4.57.6
+datasets==3.2.0
+accelerate==1.2.1
+peft==0.14.0
+bitsandbytes==0.45.0
+trl==0.13.0
+sentencepiece==0.2.0
+protobuf==5.29.2
+
+# tracking
+wandb==0.19.1
+
+# evaluation
+evaluate==0.4.3
+sacrebleu==2.5.1
+rouge-score==0.1.2
+nltk==3.9.1
+
+# RAG (Day 9)
+chromadb==0.6.3
+sentence-transformers==3.3.1
+
+# utils
+pandas==2.2.3
+numpy==1.26.4
+tqdm==4.67.1
+pyyaml==6.0.2

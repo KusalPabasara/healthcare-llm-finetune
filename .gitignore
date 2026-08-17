@@ -1,0 +1,47 @@
+# Data — raw and derived datasets stay out of git.
+# data/raw/ is the reproducibility anchor for the whole sprint; it lives in Drive.
+data/raw/*
+data/processed/*
+data/synthetic/*
+!data/**/.gitkeep
+!data/**/README.md
+!data/raw/SOURCES.md
+!data/raw/CHECKSUMS.txt
+
+# Model weights and adapters — Drive, not git
+models/*
+!models/.gitkeep
+!models/registry.md
+*.safetensors
+*.bin
+*.gguf
+*.pt
+*.ckpt
+
+# Chroma index (Day 9)
+chroma/
+*.sqlite3
+
+# Eval outputs — keep the summary tables, drop the raw dumps
+eval/runs/
+*.jsonl
+
+# Secrets
+.env
+*.key
+wandb/
+.netrc
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
