@@ -25,10 +25,12 @@ Record these once, then never change them mid-sprint. Drift here invalidates the
 | Eval harness path | _TBD_ | Day 3 |
 | Manual question set (fixed) | _TBD_ | Day 3 |
 | transformers version | **4.57.6** (not 5.x — see Day 1 notes) | Day 1 ✓ |
-| peft / bitsandbytes | **0.14.0** / **0.45.0** | Day 1 ✓ |
-| Base model IDs (Qwen / Llama) | _TBD — record from Colab_ | Day 1 |
-| GPU + VRAM | _TBD — `verify_env.py` prints it_ | Day 1 |
-| Compute dtype | _fp16 (T4 has no bf16)_ | Day 1 |
+| peft / bitsandbytes | **0.14.0** / **0.46.1** | Day 1 ✓ |
+| datasets / accelerate / trl | **3.2.0** / **1.2.1** / **0.13.0** | Day 1 ✓ |
+| torch | **2.11.0+cu128** (Colab-provided) | Day 1 ✓ |
+| GPU + VRAM | **Tesla T4, 14.6 GiB** (single) | Day 1 ✓ |
+| Compute dtype | **fp16** — T4 is Turing, no bf16 | Day 1 ✓ |
+| Base model IDs (Qwen / Llama) | _TBD — pick on Day 2_ | Day 2 |
 | Embedding model (RAG) | _TBD_ | Day 9 |
 
 ---
@@ -36,10 +38,10 @@ Record these once, then never change them mid-sprint. Drift here invalidates the
 ## Day 1 — Mon 17 Aug · KAN-11 · Environment Setup + Data Collection
 
 - [x] ~~Kaggle API key~~ — Kaggle dropped as platform; key still worth expiring
-- [ ] Colab notebook open, **Runtime → Change runtime type → T4 GPU**
-- [ ] Drive mounted (first cell, every session)
-- [ ] Install `requirements.txt` → run `python scripts/verify_env.py`
-- [ ] Record GPU type + compute dtype in Frozen decisions
+- [x] Colab notebook open, **Runtime → Change runtime type → T4 GPU**
+- [x] Drive mounted (first cell, every session)
+- [x] Install `requirements.txt` → `verify_env.py` passes (incl. real GPU 4-bit matmul)
+- [x] Record GPU type + compute dtype in Frozen decisions
 - [x] **Pin exact versions → `requirements.txt`** (silent bumps change later numbers)
 - [x] Create project folder structure
 - [x] Select datasets — **MedMCQA** (apache-2.0) + **PubMedQA** (MIT), both commercial-safe
@@ -50,7 +52,7 @@ Record these once, then never change them mid-sprint. Drift here invalidates the
 - [x] Write README + `docs/platform.md`
 - [x] Build the Day 1 notebook → `notebooks/day1_setup.py` (validated nbformat)
 - [ ] Data written to Drive (**nothing in /content survives a disconnect**)
-- [ ] GitHub token ready for the private-repo clone (entered via getpass)
+- [x] GitHub token ready for the private-repo clone (entered via getpass)
 - [ ] **Lead:** post exact versions + folder layout to team channel, ask all lanes to match
 
 **Notes:**
@@ -71,7 +73,15 @@ Record these once, then never change them mid-sprint. Drift here invalidates the
 - Datasets chosen on licence grounds: MedMCQA (apache-2.0) + PubMedQA (MIT).
   ChatDoctor has no licence; MedQuAD is CC BY-SA share-alike. See `data/raw/SOURCES.md`.
 - **A Kaggle key was pasted into chat on 17 Aug — still worth expiring even though
-  Kaggle is no longer the platform.**
+  Kaggle is no longer the platform.** A GitHub PAT was also exposed in notebook
+  output the same day and revoked; the notebook now passes tokens via a git
+  credential helper so they never reach stdout or `.git/config`.
+- **bitsandbytes 0.45.0 → 0.46.1.** Colab ships torch 2.11+cu128 and 0.45.0 has no
+  cu128 binary — it imports cleanly but has no GPU support, so QLoRA would have
+  failed on Day 4 with no earlier warning. cu128 builds start at 0.45.3.
+  Worth telling every lane: constructing a `BitsAndBytesConfig` succeeds even when
+  this is broken, so a config-only check gives a false pass. The real test is an
+  `nf4 Linear4bit` matmul on the GPU, which `verify_env.py` now runs.
 
 ---
 
