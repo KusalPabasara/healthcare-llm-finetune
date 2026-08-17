@@ -52,3 +52,9 @@ Thumbs.db
 
 # Jira exports live in docs/ as jira-board-export.csv
 /Jira*.csv
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
