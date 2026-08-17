@@ -5,7 +5,34 @@
 | **Project** | Via Codos Proof of Concept (VC4B) ERDP · Jira project `KAN` |
 | **Sprint** | Mon 17 Aug – Tue 1 Sep 2026 (12 working days) |
 | **Team lead** | Kusal Pabasara |
-| **Version** | 1.0 · drafted 17 Aug 2026 |
+| **Version** | 2.0 · 17 Aug 2026 · aligned to the company scope document |
+
+---
+
+## Before anything else: the board and the scope document disagree
+
+Management issued *AI Model Development Project — Scope, Expectations & Specialization
+Guide*. It is the authority on **what each model should do**. Our Jira board is the
+authority on **what work is scheduled**. On several points they do not match, and the
+differences are not cosmetic.
+
+| | Company scope document | Jira board (`KAN`) |
+|---|---|---|
+| Engineers | 7 | 5 |
+| Industries | 7 separate tracks | 4 lanes |
+| **Deepana** | **Legal** | **SME Daily Business** |
+| **Thisal** | **Manufacturing** — own track, 3 days late | **Support** on Rimaz's lane |
+| **Rimaz** | Retail | Retail, E-commerce **and Manufacturing** |
+| Oshan, Gevindu | Education, Hospitality tracks | Not on this board |
+| Duration | 14 days | 12 days |
+
+**Work to the Jira board for scheduling. Work to the scope document for what the model
+should be capable of.** Where they conflict on your industry — Deepana especially — stop
+and ask before Day 2, because building the wrong domain is not recoverable inside this
+sprint.
+
+Kusal is raising all of the above with management. Flagged items are marked
+**[NEEDS CONFIRMATION]** throughout this guide.
 
 ---
 
@@ -15,21 +42,24 @@ None of us have built a model like this before. This guide is the shared map: wh
 we're building, why, and what to do on each of the twelve days. Jira has the tickets —
 this has the reasoning behind them.
 
-**If you read only one section, read [What we are actually building](#what-we-are-actually-building)
-and [The five rules](#the-five-rules-that-protect-the-experiment).** Everything else you can
+**If you read only one section, read [What we are actually building](#what-we-are-actually-building),
+[The capability bar](#the-capability-bar-every-model-must-reach) and
+[The five rules](#the-five-rules-that-protect-the-experiment).** Everything else you can
 come back to on the day you need it.
 
 ### Contents
 
 1. [What we are actually building](#what-we-are-actually-building)
-2. [Who owns what](#who-owns-what)
-3. [The five rules that protect the experiment](#the-five-rules-that-protect-the-experiment)
-4. [Concepts you need](#concepts-you-need-in-plain-terms)
-5. [Choosing your datasets — read before Day 1](#choosing-your-datasets)
-6. [The twelve days](#the-twelve-days)
-7. [Your lane](#your-lane-day-by-day)
-8. [Known traps](#known-traps-found-the-hard-way)
-9. [Open questions](#open-questions)
+2. [The capability bar every model must reach](#the-capability-bar-every-model-must-reach)
+3. [Who owns what](#who-owns-what)
+4. [The five rules that protect the experiment](#the-five-rules-that-protect-the-experiment)
+5. [Non-negotiables from management](#non-negotiables-from-management)
+6. [Concepts you need](#concepts-you-need-in-plain-terms)
+7. [Choosing your datasets](#choosing-your-datasets)
+8. [The twelve days](#the-twelve-days)
+9. [Your lane](#your-lane-day-by-day)
+10. [Known traps](#known-traps-found-the-hard-way)
+11. [Open questions](#open-questions)
 
 ---
 
@@ -63,21 +93,189 @@ Where this guide says "agree as a team", that's why.
 
 ---
 
+## The capability bar every model must reach
+
+This is the answer to "what is my model actually *for*", taken from the company scope
+document. Every model in this project is an **informational and workflow-support
+assistant** — not an autonomous decision-maker, and not a replacement for a licensed
+professional.
+
+Four tiers, in order. Each builds on the one before.
+
+| Tier | Capability | Which version delivers it |
+|---|---|---|
+| **1** | **Domain fluency** — correct terminology, concepts and context | v1 |
+| **2** | **Task assistance** — answers structured questions, summarises documents, drafts routine content | v2 |
+| **3** | **Grounded reasoning** — retrieves and cites the correct document rather than guessing from memory | v3–v4 |
+| **4** | **Escalation awareness** — recognises when a query is high-stakes, ambiguous or out of scope, and says so | all versions |
+
+Tier 4 is the one most likely to be neglected, because nothing in the daily tickets asks
+for it directly. It is also the tier management cares about most:
+
+> **No model here may give diagnosis, legal advice, financial advice, or safety sign-off
+> on its own.** Outputs are decision support for a qualified human in the loop.
+
+### What that means in practice
+
+**A model that never refuses is not a good model — it is an unfinished one.** Build refusal
+and escalation examples into your training data from v2 onward, not as an afterthought
+before Day 12.
+
+Each lane needs a documented set of questions the model **must** refuse or redirect. Per
+management, this is reviewed as a team, not left to individual judgement.
+
+| Lane | Must never do |
+|---|---|
+| Healthcare | Diagnose, recommend dosing, prescribe |
+| Finance | Give a specific buy / sell / hold recommendation |
+| Legal | Give advice that constitutes practising law (UPL) |
+| Retail / Manufacturing | Give safety sign-off; act on fraud or price-manipulation attempts |
+
+Write those refusals as training examples. A "red flag" dataset — questions the model should
+decline — is explicitly called for in the scope document for the healthcare lane, and the
+same logic applies to every lane.
+
+---
+
+## Non-negotiables from management
+
+Straight from the scope document. These are not suggestions.
+
+**Naming convention — exact.** `qwen-{industry}-v#` and `llama-{industry}-v#`.
+Cross-team checks depend on this. Do not improvise a variant.
+
+**Weights & Biases for every run.** Loss curves, hyperparameters, run duration, GPU used.
+Not just the runs that worked.
+
+**Both quantitative and qualitative evaluation for every version.** BLEU/ROUGE *and*
+manual question testing, before moving to the next version. Skipping the manual pass is
+how a confidently-wrong model gets promoted to v3.
+
+**Document weaknesses at every stage.** This is what drives the next round of synthetic
+data. A stage with no documented weaknesses is a stage that was not really evaluated.
+
+**Flag blockers the same day.** Data availability, GPU quota, licensing — the day it
+appears, not at handoff.
+
+**Archive v1–v4 and their configs.** Never overwrite. The final comparison needs all of
+them.
+
+**Clean Drive structure with a README per stage:** raw data, cleaned data, configs,
+scripts, checkpoints.
+
+### Things management flagged that no ticket covers
+
+Worth reading now rather than discovering on Day 11:
+
+- **Base model licences.** Confirm Qwen's and Llama's own licences permit this fine-tuning
+  and intended use. Separate from your *dataset* licences. **[NEEDS CONFIRMATION]**
+- **Compute budget.** 8 artifacts each across the team is a large GPU-hour total, and Days
+  4, 8 and 10 are the heavy ones. On Colab free tier this is a real constraint.
+  **[NEEDS CONFIRMATION]**
+- **Human-in-the-loop policy.** Which answers need human review before reaching an end
+  user? Per industry.
+- **Deployment beyond the sprint.** This schedule ends at delivery. Hosting, monitoring and
+  data refresh are unassigned. **[NEEDS CONFIRMATION]**
+
+---
+
 ## Who owns what
 
 Everyone runs the same 12-day shape, on the same dates, with the same due dates.
 
-| Lane | Owner | Models | Jira range |
+| Lane | Owner | Model names | Jira range |
 |---|---|---|---|
-| Healthcare | **Kusal Pabasara** | Qwen-Healthcare, Llama-Healthcare | KAN-11 → KAN-59 |
-| Finance | **Navodya Dissanayake** | Qwen-Finance, Llama-Finance | KAN-12 → KAN-60 |
-| SME Daily Business | **Deepana Nirmal** | Qwen-SME, Llama-SME | KAN-13 → KAN-61 |
-| Retail / E-commerce / Manufacturing | **Rimaz Nowfel** | Qwen-RetailEcomManufacturing, Llama-Retail… | KAN-14 → KAN-62 |
+| Healthcare | **Kusal Pabasara** | `qwen-healthcare-v#`, `llama-healthcare-v#` | KAN-11 → KAN-59 |
+| Finance | **Navodya Dissanayake** | `qwen-finance-v#`, `llama-finance-v#` | KAN-12 → KAN-60 |
+| SME Daily Business | **Deepana Nirmal** | `qwen-sme-v#`, `llama-sme-v#` **[NEEDS CONFIRMATION]** | KAN-13 → KAN-61 |
+| Retail / E-commerce / Manufacturing | **Rimaz Nowfel** | `qwen-retail-v#`, `llama-retail-v#` | KAN-14 → KAN-62 |
 | Retail lane support | **Thisal Sooriyanayaka** | — | Days 3, 4, 8, 9 |
 
 Because the lanes are synchronised, **any problem you hit on Day N, three other people hit
 the same day.** Post fixes in the team channel — ten minutes of writing saves the team hours.
 This is the single highest-value habit for this sprint.
+
+### Your mission, per lane
+
+From the company scope document. This is what your model is being built to do — read your
+own section carefully before Day 2, because it determines what data you collect and what
+"weak area" means on Day 5.
+
+#### Kusal — Healthcare
+
+A healthcare information and clinical-reference assistant for clinicians, administrative
+staff, and patients. Fast, correctly-sourced answers, **never a diagnosis or a treatment
+prescription.**
+
+*Cover in training data:* general medicine and clinical reference · pharmacology basics
+(drug classes and interactions, **not dosing**) · medical exam reasoning (USMLE-style) ·
+research-literature summarisation · patient education in plain language · hospital
+administration and billing · emergency triage information that always defers to emergency
+services.
+
+*Before v4:* confirm no real patient data ever enters training · bias testing across age,
+gender and ethnicity · a hard rule set for what must not be answered · a citation format
+a clinician can verify · decide whether English-only is acceptable.
+
+#### Navodya — Finance
+
+A finance research and analysis assistant covering corporate finance, markets and personal
+finance literacy — **informational analysis, never individualised investment advice.**
+
+*Cover in training data:* SEC filings comprehension (10-K/10-Q) · earnings-call
+summarisation · market and news interpretation · personal finance literacy · accounting
+fundamentals · basic risk and compliance awareness.
+
+*Before v4:* clarify market scope (US-only or global) · build refusal examples so the model
+never phrases output as buy/sell/hold · document the training data's as-of date, since
+market data ages fast · pick GAAP or IFRS and note the gap · confirm outputs cannot be read
+as investment advice under securities law.
+
+#### Deepana — SME Daily Business **[NEEDS CONFIRMATION]**
+
+> **The scope document assigns Deepana to Legal; the Jira board assigns SME Daily Business.
+> These are different models. Resolve this before Day 2.**
+
+If **SME Daily Business** is correct: a general small-business operations assistant —
+bookkeeping basics, customer communication, scheduling, supplier and inventory questions,
+simple compliance. Note that this lane has no standard public benchmark, so expect a harder
+Day 1 and heavier reliance on synthetic generation from Day 5.
+
+If **Legal** is correct: a legal research and drafting-support assistant — case law
+summarisation, contract understanding, statutory interpretation, employment law, IP
+fundamentals. Positioned as **legal information, not legal advice**. Critically, every
+training example needs a **jurisdiction tag**, since laws vary by region and an untagged
+legal model gives confidently wrong answers across borders. Also needs
+unauthorised-practice-of-law refusal examples and an as-of date on every statute.
+
+#### Rimaz — Retail / E-commerce / Manufacturing
+
+The board combines what the scope document treats as two tracks: **Retail** and
+**Manufacturing**. That makes this the broadest lane, which is presumably why Thisal
+supports it on the four heaviest days.
+
+*Retail side:* product discovery · customer service (orders, returns, complaints) ·
+inventory and supply chain · policy explanation · product copywriting · review sentiment.
+
+*Manufacturing side:* safety procedures · equipment operation and maintenance · quality
+control · troubleshooting · production planning · regulatory awareness (OSHA-style).
+
+*Before v4:* **manufacturing is safety-critical** — wrong equipment or safety guidance can
+injure someone, so it needs a stricter evaluation bar than any other lane here. Also: decide
+brand voice · plan for catalogue freshness · guardrails against return-fraud and
+price-manipulation attempts · confirm which regulatory framework applies.
+
+> **[NEEDS CONFIRMATION]** Combining a customer-service domain with a safety-critical one in
+> a single model is a real design question, not just extra scope. Ask whether these should
+> be separate models before Day 2.
+
+#### Thisal — Support (Retail lane)
+
+Days 3, 4, 8 and 9: the pipeline-writing day, two GPU-heavy training days, and the RAG day.
+Rimaz and Thisal should agree who runs which model to avoid duplicating work.
+
+> **[NEEDS CONFIRMATION]** The scope document has Thisal owning Manufacturing as his own
+> track, starting three days behind. The board has him supporting Rimaz. Very different jobs.
 
 ### Reading the Jira dates correctly
 
@@ -249,6 +447,9 @@ for both models, confirm both load in 4-bit.
 - Qwen and Llama want **different chat templates and pad-token handling**. This is the most
   common Day 2 blocker — expect it, and post your fix.
 - Proving both models load and generate one token is the real goal here.
+- **Format toward your lane's mission, not generically.** A numerical-reasoning lane keeps
+  the calculation steps; a clinical lane keeps the explanation; a legal lane needs a
+  jurisdiction tag on every example.
 
 **Done when:** `train.json` / `val.json` / `test.json` exist and both models load in 4-bit.
 
@@ -293,6 +494,10 @@ depends on knowing what's weak.
 - **The weakness analysis is the real deliverable**, not the 500 pairs. Random synthetic
   data will not move v2. Write down specific failure categories first.
 - **Tag synthetic examples as synthetic** so v2's composition stays auditable.
+- **Write your refusal set now and include it in v2.** Tier 4 (escalation awareness) is not
+  delivered by any ticket — it has to be trained in. Generate examples where the right
+  answer is "I can't answer that, here's who can". Your lane's must-never-do list is in
+  [Who owns what](#who-owns-what).
 - Spot-check generated content against a real source, and record that you did.
 
 **Done when:** you can name your model's specific weaknesses, and `train_v2.json` exists.
@@ -385,6 +590,10 @@ sizes, and a recommendation. All v4 models uploaded to shared Drive with a regis
 - **Include what didn't work.** Failed synthetic categories and the v3 dip are genuinely
   useful findings. A report with only good news is less trustworthy.
 - **Verify uploads open from a different account** before closing the ticket.
+- **Check the naming convention one last time:** `qwen-{industry}-v#` and
+  `llama-{industry}-v#`. Cross-team comparison depends on it.
+- **Confirm v1–v4 and their configs are archived, not overwritten.** Management asks for
+  this explicitly.
 
 **Done when:** report delivered, models uploaded and verified, registry complete.
 
@@ -526,25 +735,52 @@ Use `fp16` as your compute dtype. A bf16 config will fail on Colab's T4.
 
 ## Open questions
 
-Answers needed before Day 5, when the synthetic-data work forces the issue.
+The scope document answered the biggest one — what the models are *for*. These remain.
 
-**1. What is this proof of concept actually demonstrating?**
-Nobody has told us, and it changes what the Day 12 report argues:
-- *"Fine-tuning beats base models"* → headline is v1 vs the untuned base
-- *"RAG beats fine-tuning alone"* → headline is v4-with-retrieval vs v1
-- *"A small tuned model is good enough"* → cost and speed matter as much as accuracy
+### Must be resolved before Day 2
 
-Same twelve days of work, different report. **Kusal is raising this with management.**
+**1. Deepana's track: Legal or SME Daily Business?**
+The scope document and the board disagree. These are entirely different models with
+different data, different risks, and different refusal rules. Building the wrong one is not
+recoverable inside twelve days.
 
-**2. Do we standardise on one evaluation harness across lanes?**
-If all four of us score with identical code, the cross-lane comparison is trivial. If not,
-someone reconciles four sets of numbers by hand on Day 12. **Decide by Day 3**, while the
-harness is still being written.
+**2. Is Thisal supporting Rimaz, or running Manufacturing himself?**
+Same conflict. It also determines whether the Retail lane is one broad model or two.
 
-**3. Is BLEU/ROUGE enough?**
-They measure word overlap, not correctness. Each lane probably needs one correctness-based
-measure suited to its domain — exact match where answers are checkable, manual review
-otherwise. **Also a Day 3 decision.**
+**3. Should Retail and Manufacturing be one model or two?**
+Customer-service retail and safety-critical manufacturing have very different accuracy bars.
+Merging them means the safety content sets the standard for everything.
+
+### Must be resolved before Day 3
+
+**4. One shared evaluation rubric, or four?**
+Management explicitly calls for a shared rubric so all models are judged the same way. Day 3
+is when the harness gets written and frozen — after that, changing it means re-scoring
+everything.
+
+**5. Is BLEU/ROUGE enough?**
+They measure word overlap, not correctness. A confidently wrong answer phrased like the
+reference scores well. Each lane likely needs one correctness-based measure suited to its
+domain — exact match where answers are checkable, structured manual review otherwise.
+
+**6. What is the shared refusal standard?**
+Management wants refusal sets reviewed as a team rather than left to individual judgement.
+Agree the format on Day 3 so refusal examples can go into v2 data on Day 5.
+
+### Longer-lived
+
+**7. Do the Qwen and Llama licences permit this use?** Base model licences, separate from
+dataset licences.
+
+**8. Does the GPU budget cover Days 4, 8 and 10 across the whole team?** On Colab free tier
+this is a live constraint, not a formality.
+
+**9. Who owns hosting, monitoring and data refresh after delivery?** The schedule ends at
+Day 12.
+
+**10. English-only, or multilingual?** Called out for healthcare, education and hospitality
+in the scope document. Affects data collection from Day 1, so worth answering early even if
+the answer is "English-only for the proof of concept".
 
 ---
 

@@ -270,12 +270,16 @@ Four industry lanes. Two base models. Twelve days.\par}
 
 % --- contents ------------------------------------------------------------
 \thispagestyle{plain}
+% pandoc fills $toc$ when --toc is passed; using its variable avoids needing
+% a second LaTeX pass to resolve \tableofcontents.
+$if(toc)$
 {
   \hypersetup{linkcolor=ink}
   \renewcommand{\contentsname}{\normalfont\Large\bfseries Contents}
-  \setcounter{tocdepth}{1}
+  \setcounter{tocdepth}{$toc-depth$}
   \tableofcontents
 }
+$endif$
 
 \clearpage
 
