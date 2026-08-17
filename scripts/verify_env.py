@@ -209,6 +209,21 @@ def main():
     check_session_budget()
 
     print("\n" + "=" * 52)
+
+    # A VM reset restores Colab's stock packages: several pins drift together
+    # and the ones Colab does not ship vanish. That looks alarming but the fix
+    # is just reinstalling — distinguish it from a genuine partial install.
+    stock_reset = sum(1 for v in found.values() if v is None) >= 2 and any(
+        v is not None and v != PINNED[k] for k, v in found.items()
+    )
+    if stock_reset and not versions_ok:
+        print("This looks like a fresh/reset Colab VM — stock packages are back.")
+        print("Nothing is broken and Drive data is untouched. Reinstall:\n")
+        print("  !pip install -r requirements.txt")
+        print("\nThen restart the session and re-run this check.")
+        print("=" * 52)
+        return 1
+
     if versions_ok and gpu_ok and bnb_ok:
         print("Environment verified. Record this in PROGRESS.md:\n")
         for k, v in found.items():

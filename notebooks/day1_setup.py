@@ -139,7 +139,47 @@ print(subprocess.run(["git", "log", "--oneline", "-1"],
 # %%
 # Colab ships older versions of most of these. Installing the pins keeps
 # results reproducible across sessions and comparable across the team's lanes.
-sh("pip install -q -r requirements.txt")
+#
+# This cell must run in EVERY session. A Colab VM reset restores the stock
+# package set, so pins installed yesterday are gone today even though Drive
+# data survives.
+#
+# Not quiet: -q hides resolver failures, and a partial install that looks
+# successful is worse than a loud one that fails.
+
+res = sh("pip install -r requirements.txt 2>&1 | tail -25")
+
+# pip can exit 0 having skipped packages, so confirm against the pins rather
+# than trusting the exit code.
+import importlib.metadata as md
+
+EXPECTED = {
+    "transformers": "4.57.6",
+    "datasets": "3.2.0",
+    "accelerate": "1.2.1",
+    "peft": "0.14.0",
+    "bitsandbytes": "0.46.1",
+    "trl": "0.13.0",
+}
+
+print("\non disk after install:")
+missing = []
+for pkg, want in EXPECTED.items():
+    try:
+        got = md.version(pkg)
+        mark = "ok " if got == want else "!! "
+        print(f"  {mark} {pkg:<16} {got}" + ("" if got == want else f"  (want {want})"))
+        if got != want:
+            missing.append(pkg)
+    except md.PackageNotFoundError:
+        print(f"  !!  {pkg:<16} NOT INSTALLED")
+        missing.append(pkg)
+
+if missing:
+    print(f"\nInstall did not complete for: {', '.join(missing)}")
+    print("Re-run this cell. If it keeps failing, read the pip output above.")
+else:
+    print("\nAll pins on disk. Next: run 3a, then restart.")
 
 # %%
 # --- 3a. Confirm what is on disk, then RESTART --------------------------
