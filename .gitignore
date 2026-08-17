@@ -49,3 +49,6 @@ Thumbs.db
 .vscode/
 .idea/
 .kaggle-push/
+
+# Jira exports live in docs/ as jira-board-export.csv
+/Jira*.csv
