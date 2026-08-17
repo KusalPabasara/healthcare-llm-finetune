@@ -56,9 +56,21 @@ PROJECT = Path("/content/healthcare-llm-finetune")
 
 
 def sh(cmd, **kw):
-    """Run a shell command, echoing it. Never pass secrets through this."""
+    """Run a shell command and print its output. Never pass secrets through this.
+
+    Subprocess output is captured and re-printed rather than inherited: under
+    Colab a child process writing to the real stdout does not reach the cell,
+    so a failing command would otherwise report only its exit code.
+    """
     print(f"$ {cmd}")
-    return subprocess.run(cmd, shell=True, check=False, **kw)
+    result = subprocess.run(
+        cmd, shell=True, check=False, capture_output=True, text=True, **kw
+    )
+    if result.stdout:
+        print(result.stdout, end="")
+    if result.stderr:
+        print(result.stderr, end="")
+    return result
 
 
 def clone_private(repo: str, dest: Path, token: str):
@@ -115,7 +127,18 @@ sh("pip install -q -r requirements.txt")
 
 result = sh("python scripts/verify_env.py")
 if result.returncode != 0:
-    raise SystemExit("Environment verification failed — fix before continuing.")
+    print(
+        "\n"
+        + "=" * 60
+        + "\nVerification failed. Read the FAIL / MISS / DRIFT lines above.\n\n"
+        "  no CUDA device  -> Runtime > Change runtime type > T4 GPU\n"
+        "  DRIFT on a pin  -> Runtime > Restart session, re-run from the\n"
+        "                     pip install cell (new versions need a fresh\n"
+        "                     interpreter)\n"
+        "  MISS a package  -> the pip install cell did not finish; re-run it\n"
+        + "=" * 60
+    )
+    raise SystemExit("Environment verification failed — see above.")
 
 # %%
 # --- 4. Download the datasets -------------------------------------------
