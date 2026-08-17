@@ -72,7 +72,7 @@ Everyone runs the same 12-day shape, on the same dates, with the same due dates.
 | Healthcare | **Kusal Pabasara** | Qwen-Healthcare, Llama-Healthcare | KAN-11 → KAN-59 |
 | Finance | **Navodya Dissanayake** | Qwen-Finance, Llama-Finance | KAN-12 → KAN-60 |
 | SME Daily Business | **Deepana Nirmal** | Qwen-SME, Llama-SME | KAN-13 → KAN-61 |
-| Retail / E-commerce / Manufacturing | **Rimaz Nowfel** | Qwen-RetailEcomManufacturing, Llama-… | KAN-14 → KAN-62 |
+| Retail / E-commerce / Manufacturing | **Rimaz Nowfel** | Qwen-RetailEcomManufacturing, Llama-Retail… | KAN-14 → KAN-62 |
 | Retail lane support | **Thisal Sooriyanayaka** | — | Days 3, 4, 8, 9 |
 
 Because the lanes are synchronised, **any problem you hit on Day N, three other people hit
@@ -181,10 +181,10 @@ This is a **commercial** proof of concept. That rules out:
 
 | Licence type | Verdict | Why |
 |---|---|---|
-| MIT, Apache-2.0, CC-BY-4.0 | ✅ Safe | Commercial use permitted, attribution only |
-| CDLA-Sharing, CC-BY-SA | ⚠️ Ask first | Share-alike may encumber derived model weights |
-| **CC-BY-NC** (any) | ❌ Do not use | Non-commercial. Explicitly excludes this project |
-| **No licence stated** | ❌ Do not use | No licence means no permission |
+| MIT, Apache-2.0, CC-BY-4.0 | **Safe** | Commercial use permitted, attribution only |
+| CDLA-Sharing, CC-BY-SA | **Ask first** | Share-alike may encumber derived model weights |
+| **CC-BY-NC** (any) | **Do not use** | Non-commercial. Explicitly excludes this project |
+| **No licence stated** | **Do not use** | No licence means no permission |
 
 Check the licence on the dataset's own page. **Do not trust a blog post or a tutorial** —
 several widely-recommended datasets are non-commercial and the tutorials never mention it.
@@ -194,20 +194,20 @@ several widely-recommended datasets are non-commercial and the tutorials never m
 Checked against dataset pages on 17 Aug 2026. Verify again before you use them.
 
 **Healthcare — Kusal**
-- `openlifescienceai/medmcqa` — Apache-2.0 ✅ — 182k medical MCQs, 21 subjects, expert explanations
-- `qiaojin/PubMedQA` (pqa_labeled) — MIT ✅ — 1k expert-labeled QA **with a `context` field**
-- ❌ ChatDoctor-HealthCareMagic-100k — no stated licence
-- ❌ MedQuAD — CC BY-SA 4.0 share-alike
+- `openlifescienceai/medmcqa` — Apache-2.0 — 182k medical MCQs, 21 subjects, expert explanations
+- `qiaojin/PubMedQA` (pqa_labeled) — MIT — 1k expert-labeled QA **with a `context` field**
+- **Excluded.** ChatDoctor-HealthCareMagic-100k — no stated licence
+- **Excluded.** MedQuAD — CC BY-SA 4.0 share-alike
 
 **Finance — Navodya**
-- `ibm-research/finqa` — CC-BY-4.0 ✅ — 8k QA over financial tables, numerical reasoning
-- `gbharti/finance-alpaca` — MIT ✅ — 68k instruction pairs
-- ❌ **Financial PhraseBank — CC-BY-NC-SA-3.0.** This is the most commonly recommended
+- `ibm-research/finqa` — CC-BY-4.0 — 8k QA over financial tables, numerical reasoning
+- `gbharti/finance-alpaca` — MIT — 68k instruction pairs
+- **Excluded — read this.** **Financial PhraseBank — CC-BY-NC-SA-3.0.** This is the most commonly recommended
   finance dataset and it is **non-commercial**. The authors will license it commercially on
   request — ask early if you want it.
 
 **Retail / E-commerce / Manufacturing — Rimaz & Thisal**
-- `bitext/Bitext-retail-ecommerce-llm-chatbot-training-dataset` — CDLA-Sharing-1.0 ⚠️ —
+- `bitext/Bitext-retail-ecommerce-llm-chatbot-training-dataset` — CDLA-Sharing-1.0, share-alike —
   44.8k instruction/response pairs. Commercial use permitted **but share-alike** — confirm
   with whoever owns licensing before building v1 on it.
 
@@ -252,7 +252,9 @@ for both models, confirm both load in 4-bit.
 
 **Done when:** `train.json` / `val.json` / `test.json` exist and both models load in 4-bit.
 
-### Day 3 — Wed 19 Aug · Writing Training Pipelines ⚑ highest leverage
+### Day 3 — Wed 19 Aug · Writing Training Pipelines
+
+*Highest-leverage day of the sprint.*
 
 Write training scripts for both models, smoke-test on a small subset, set up Weights & Biases.
 
@@ -266,7 +268,7 @@ what you write today with a different data path.
 
 **Done when:** both scripts train on a tiny subset without error, and the harness exists.
 
-### Day 4 — Thu 20 Aug · Running v1 Training 🖥
+### Day 4 — Thu 20 Aug · Running v1 Training
 
 Run both trainings, monitor loss and GPU memory, save as v1.
 
@@ -278,7 +280,9 @@ Run both trainings, monitor loss and GPU memory, save as v1.
 
 **Done when:** `qwen-v1` and `llama-v1` are saved to Drive with training times recorded.
 
-### Day 5 — Fri 21 Aug · Testing v1 + Synthetic Data ⚑ heaviest day
+### Day 5 — Fri 21 Aug · Testing v1 and Synthetic Data
+
+*The heaviest day.*
 
 Score v1, manually probe 20 domain questions, identify weak areas, generate 500+ synthetic
 Q&A pairs targeting those weaknesses, merge into `train_v2.json`.
@@ -306,7 +310,9 @@ Train both on `train_v2.json`, evaluate, manually test 30 questions, document th
 
 **Done when:** v2 artifacts saved and the v1→v2 comparison is written down.
 
-### Day 7 — Tue 25 Aug · Preparing v3 Data (RAG-Aware) ⚑ lightest day
+### Day 7 — Tue 25 Aug · Preparing v3 Data (RAG-Aware)
+
+*The lightest day — use the slack deliberately.*
 
 Merge data into `train_v3.json` and add a `context` field to every example.
 
@@ -319,7 +325,7 @@ Merge data into `train_v3.json` and add a `context` field to every example.
 
 **Done when:** `train_v3.json` has context on every example, and you know your Day 9 plan.
 
-### Day 8 — Wed 26 Aug · v3 Training + Self-Testing 🖥
+### Day 8 — Wed 26 Aug · v3 Training and Self-Testing
 
 Train both on `train_v3.json`, evaluate, compare against v2.
 
@@ -329,7 +335,9 @@ Train both on `train_v3.json`, evaluate, compare against v2.
 
 **Done when:** v3 artifacts saved, and the expected dip is documented as expected.
 
-### Day 9 — Thu 27 Aug · RAG Integration ⚠ highest risk
+### Day 9 — Thu 27 Aug · RAG Integration
+
+*Highest risk. The day most likely to slip.*
 
 Stand up ChromaDB, index your documents as embeddings, wire up
 retrieve → context → model → answer, evaluate on 200 queries.
@@ -346,7 +354,7 @@ and 200 evaluation queries — with Day 10 depending on all of it.
 
 **Done when:** the RAG pipeline answers correctly end to end, and the index is on Drive.
 
-### Day 10 — Fri 28 Aug · v4 Training + RAG Testing 🖥
+### Day 10 — Fri 28 Aug · v4 Training and RAG Testing
 
 Train both on `train_v4.json`, test with RAG attached on 100 queries.
 

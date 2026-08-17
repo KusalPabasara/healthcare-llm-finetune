@@ -1,0 +1,284 @@
+\documentclass[11pt,a4paper]{article}
+
+% ---------------------------------------------------------------------------
+% Via Codos VC4B ERDP — team guide template
+% Compiled with XeLaTeX. Set in Libertinus: a book face with real small caps
+% and old-style figures, which holds up better at 11pt than Garamond does.
+% ---------------------------------------------------------------------------
+
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setdefaultlanguage{english}
+
+\setmainfont{Linux Libertine O}[
+  Numbers = OldStyle,
+  Ligatures = TeX,
+  SmallCapsFeatures = {LetterSpace=4},
+]
+\setsansfont{Linux Biolinum O}[Ligatures = TeX]
+\setmonofont{DejaVu Sans Mono}[Scale = 0.82]
+
+\usepackage{microtype}
+
+% --- page geometry -------------------------------------------------------
+% Generous side margins: a ~33-line measure keeps running text near 70
+% characters, which is where sustained reading is comfortable.
+\usepackage[
+  a4paper,
+  top        = 30mm,
+  bottom     = 28mm,
+  inner      = 38mm,
+  outer      = 38mm,
+  headsep    = 9mm,
+  footskip   = 14mm,
+]{geometry}
+
+\usepackage{xcolor}
+\definecolor{ink}      {HTML}{14161A}
+\definecolor{inktwo}   {HTML}{454C57}
+\definecolor{inkthree} {HTML}{6B7480}
+\definecolor{accent}   {HTML}{0B5F5F}
+\definecolor{rule}     {HTML}{CFCBC2}
+\definecolor{rulelight}{HTML}{E0DDD6}
+\definecolor{sunk}     {HTML}{F4F2EE}
+\definecolor{warnbg}   {HTML}{F9F1E2}
+\definecolor{warnrule} {HTML}{A5620C}
+\definecolor{critbg}   {HTML}{F8E8E5}
+\definecolor{critrule} {HTML}{95271E}
+
+\color{ink}
+
+% --- headings ------------------------------------------------------------
+\usepackage[explicit]{titlesec}
+
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{ink}}
+  {\thesection}{0.7em}{#1}
+  [\vspace{-0.45\baselineskip}{\color{rule}\rule{\linewidth}{0.4pt}}]
+\titlespacing*{\section}{0pt}{2.4\baselineskip}{0.9\baselineskip}
+
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{accent}}
+  {\thesubsection}{0.6em}{#1}
+\titlespacing*{\subsection}{0pt}{1.5\baselineskip}{0.4\baselineskip}
+
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries\color{ink}}
+  {\thesubsubsection}{0.5em}{#1}
+\titlespacing*{\subsubsection}{0pt}{1.1\baselineskip}{0.3\baselineskip}
+
+\setcounter{secnumdepth}{0}
+
+% --- running heads -------------------------------------------------------
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+\fancyfoot[C]{\footnotesize\color{inkthree}\thepage}
+\fancyhead[L]{\footnotesize\color{inkthree}\textsc{Via Codos VC4B ERDP}}
+\fancyhead[R]{\footnotesize\color{inkthree}\textsc{Team Guide}}
+
+\fancypagestyle{plain}{%
+  \fancyhf{}%
+  \renewcommand{\headrulewidth}{0pt}%
+  \fancyfoot[C]{\footnotesize\color{inkthree}\thepage}%
+}
+
+% --- spacing -------------------------------------------------------------
+\usepackage{setspace}
+\setstretch{1.16}
+\setlength{\parskip}{0.62\baselineskip}
+\setlength{\parindent}{0pt}
+\setlength{\emergencystretch}{3em}
+
+\usepackage[shortlabels]{enumitem}
+\setlist{itemsep=0.24\baselineskip, parsep=0pt, topsep=0.34\baselineskip, leftmargin=1.35em}
+\setlist[itemize]{label=\textbf{\textperiodcentered}}
+
+% --- tables --------------------------------------------------------------
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{calc}
+\usepackage{ragged2e}
+
+\renewcommand{\arraystretch}{1.32}
+\setlength{\tabcolsep}{9pt}
+\setlength{\aboverulesep}{0pt}
+\setlength{\belowrulesep}{0pt}
+\setlength{\heavyrulewidth}{0.9pt}
+\setlength{\lightrulewidth}{0.4pt}
+
+% Table headers in small caps rather than bold: quieter, and it stops a
+% header row competing with the bold terms inside the table body.
+\newcommand{\thead}[1]{\textsc{\footnotesize #1}}
+
+% --- callouts ------------------------------------------------------------
+\usepackage[most]{tcolorbox}
+
+\newtcolorbox{callout}{
+  enhanced, breakable,
+  colback = sunk, colframe = accent,
+  boxrule = 0pt, leftrule = 1.6pt,
+  arc = 0pt, outer arc = 0pt,
+  left = 11pt, right = 11pt, top = 8pt, bottom = 8pt,
+  before skip = 0.7\baselineskip, after skip = 0.7\baselineskip,
+}
+
+\newtcolorbox{calloutwarn}{
+  enhanced, breakable,
+  colback = warnbg, colframe = warnrule,
+  boxrule = 0pt, leftrule = 1.6pt,
+  arc = 0pt, outer arc = 0pt,
+  left = 11pt, right = 11pt, top = 8pt, bottom = 8pt,
+  before skip = 0.7\baselineskip, after skip = 0.7\baselineskip,
+}
+
+% Pandoc renders blockquotes here; they carry the "watch out" notes.
+\renewenvironment{quote}{\begin{calloutwarn}}{\end{calloutwarn}}
+
+% --- code ----------------------------------------------------------------
+\usepackage{fvextra}
+\usepackage{framed}
+
+\definecolor{shadecolor}{HTML}{F4F2EE}
+
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{
+  commandchars=\\\{\},
+  fontsize=\small,
+  breaklines, breakanywhere,
+  xleftmargin=10pt,
+}
+
+% pandoc wraps highlighted code in Shaded; give it a tinted panel with a
+% left rule, matching the callouts rather than a heavy full border.
+\newenvironment{Shaded}{%
+  \begin{tcolorbox}[
+    enhanced, breakable,
+    colback = sunk, colframe = rule,
+    boxrule = 0pt, leftrule = 1.2pt,
+    arc = 0pt, outer arc = 0pt,
+    left = 2pt, right = 6pt, top = 5pt, bottom = 5pt,
+    before skip = 0.6\baselineskip, after skip = 0.6\baselineskip,
+  ]%
+}{\end{tcolorbox}}
+
+% Syntax-highlight token commands pandoc may emit. Defined as no-ops with a
+% muted colour so the listing stays readable without a rainbow.
+\providecommand{\VerbBar}{|}
+\providecommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\providecommand{\NormalTok}[1]{#1}
+\providecommand{\KeywordTok}[1]{\textbf{#1}}
+\providecommand{\DataTypeTok}[1]{#1}
+\providecommand{\DecValTok}[1]{#1}
+\providecommand{\BaseNTok}[1]{#1}
+\providecommand{\FloatTok}[1]{#1}
+\providecommand{\ConstantTok}[1]{#1}
+\providecommand{\CharTok}[1]{#1}
+\providecommand{\SpecialCharTok}[1]{#1}
+\providecommand{\StringTok}[1]{#1}
+\providecommand{\VerbatimStringTok}[1]{#1}
+\providecommand{\SpecialStringTok}[1]{#1}
+\providecommand{\ImportTok}[1]{\textbf{#1}}
+\providecommand{\CommentTok}[1]{\textit{\textcolor{inkthree}{#1}}}
+\providecommand{\DocumentationTok}[1]{\textit{\textcolor{inkthree}{#1}}}
+\providecommand{\AnnotationTok}[1]{\textit{\textcolor{inkthree}{#1}}}
+\providecommand{\CommentVarTok}[1]{\textit{\textcolor{inkthree}{#1}}}
+\providecommand{\OtherTok}[1]{#1}
+\providecommand{\FunctionTok}[1]{#1}
+\providecommand{\VariableTok}[1]{#1}
+\providecommand{\ControlFlowTok}[1]{\textbf{#1}}
+\providecommand{\OperatorTok}[1]{#1}
+\providecommand{\BuiltInTok}[1]{#1}
+\providecommand{\ExtensionTok}[1]{#1}
+\providecommand{\PreprocessorTok}[1]{#1}
+\providecommand{\AttributeTok}[1]{#1}
+\providecommand{\RegionMarkerTok}[1]{#1}
+\providecommand{\InformationTok}[1]{#1}
+\providecommand{\WarningTok}[1]{#1}
+\providecommand{\AlertTok}[1]{\textbf{#1}}
+\providecommand{\ErrorTok}[1]{\textbf{#1}}
+
+\newcommand{\passthrough}[1]{#1}
+\newcommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+% Inline code: a faint rule instead of a filled box — less noisy in running text.
+\let\oldtexttt\texttt
+\renewcommand{\texttt}[1]{{\small\color{inktwo}\oldtexttt{#1}}}
+
+% --- links ---------------------------------------------------------------
+\usepackage[hidelinks]{hyperref}
+\hypersetup{
+  pdftitle  = {Domain LLM Fine-Tuning — Team Guide},
+  pdfauthor = {Kusal Pabasara},
+  pdfsubject= {Via Codos Proof of Concept (VC4B) ERDP},
+  colorlinks = true,
+  linkcolor  = accent,
+  urlcolor   = accent,
+  breaklinks = true,
+}
+
+\usepackage{bookmark}
+
+% Section breaks (pandoc's ---) render as nothing: the section rules already
+% separate content, and a second full-width rule would compete with them.
+% \rule itself is left alone -- it is a primitive used by titlesec above.
+% Horizontal rules from Markdown are stripped in scripts/build_pdf.py.
+
+\usepackage{needspace}
+
+\begin{document}
+
+% --- title page ----------------------------------------------------------
+\thispagestyle{empty}
+
+\vspace*{0.16\textheight}
+
+{\color{accent}\rule{\linewidth}{1.6pt}}
+\vspace{1.5\baselineskip}
+
+{\fontsize{27}{32}\selectfont\bfseries
+Domain LLM Fine-Tuning\par}
+
+\vspace{0.4\baselineskip}
+
+{\fontsize{18}{22}\selectfont\color{inktwo}
+Team Guide\par}
+
+\vspace{1.2\baselineskip}
+{\color{rule}\rule{\linewidth}{0.4pt}}
+\vspace{1.6\baselineskip}
+
+{\color{inktwo}\large
+Four industry lanes. Two base models. Twelve days.\par}
+
+\vfill
+
+\begin{tabular}{@{}l@{\hspace{2.2em}}l@{}}
+\textsc{\footnotesize Project}   & Via Codos Proof of Concept (VC4B) ERDP \\[2pt]
+\textsc{\footnotesize Board}     & Jira \texttt{KAN} \\[2pt]
+\textsc{\footnotesize Sprint}    & 17 August -- 1 September 2026 \\[2pt]
+\textsc{\footnotesize Team lead} & Kusal Pabasara \\[2pt]
+\textsc{\footnotesize Version}   & 1.0, drafted 17 August 2026 \\
+\end{tabular}
+
+\vspace{1.4\baselineskip}
+{\color{accent}\rule{\linewidth}{1.6pt}}
+
+\clearpage
+
+% --- contents ------------------------------------------------------------
+\thispagestyle{plain}
+{
+  \hypersetup{linkcolor=ink}
+  \renewcommand{\contentsname}{\normalfont\Large\bfseries Contents}
+  \setcounter{tocdepth}{1}
+  \tableofcontents
+}
+
+\clearpage
+
+$body$
+
+\end{document}
