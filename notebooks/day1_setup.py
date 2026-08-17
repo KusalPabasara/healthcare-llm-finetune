@@ -118,27 +118,95 @@ print(f"working in {Path.cwd()}")
 sh("pip install -q -r requirements.txt")
 
 # %%
-# --- 3. Verify the environment ------------------------------------------
-# Fails loudly on version drift, missing GPU, or a broken 4-bit config.
-# Do not proceed to Day 2 on a failure here.
+# --- 3a. Confirm what is on disk, then RESTART --------------------------
+# requirements.txt pins bitsandbytes 0.46.1 for CUDA 12.8. Colab preloads an
+# older build, so this reports what is on disk and hands over to a restart.
 #
-# Note: pip may warn about needing a restart. If verify_env.py reports version
-# drift, use Runtime > Restart session, then re-run from this cell.
+# Verification runs in the NEXT cell, after that restart.
+#
+# Why the split: pip writes the new version to disk, but the already-imported
+# module stays in memory for the life of the interpreter. Verifying in the same
+# cell as the install tests the old module and reports a failure that is
+# already fixed on disk.
 
+import importlib.metadata as md
+
+for pkg in ("bitsandbytes", "transformers", "peft"):
+    try:
+        print(f"  {pkg:<16} {md.version(pkg)} on disk")
+    except md.PackageNotFoundError:
+        print(f"  {pkg:<16} not installed")
+
+print(
+    "\n"
+    + "=" * 60
+    + "\nNOW: Runtime > Restart session, then run the next cell.\n"
+    "Skipping the restart makes the check test stale modules.\n"
+    + "=" * 60
+)
+
+# %%
+# --- 3b. Verify the environment (run AFTER restarting) ------------------
+# A restart clears the working directory, unmounts Drive, and drops every
+# import. This cell re-establishes all of it so it is safe to run on its own.
+
+import os
+import subprocess
+from pathlib import Path
+
+PROJECT = Path("/content/healthcare-llm-finetune")
+DRIVE = Path("/content/drive/MyDrive/healthcare-llm")
+
+if not Path("/content/drive/MyDrive").exists():
+    from google.colab import drive
+
+    drive.mount("/content/drive")
+
+if not PROJECT.exists():
+    raise SystemExit("Repo is gone — re-run the clone cell (a full VM reset clears /content).")
+
+os.chdir(PROJECT)
+
+# data/raw symlinks to Drive; re-point it if the restart dropped it.
+raw = PROJECT / "data" / "raw"
+if not raw.exists():
+    raw.parent.mkdir(parents=True, exist_ok=True)
+    raw.symlink_to(DRIVE / "data" / "raw")
+
+
+def sh(cmd, **kw):
+    """Redefined here: a restart clears every earlier definition."""
+    print(f"$ {cmd}")
+    result = subprocess.run(
+        cmd, shell=True, check=False, capture_output=True, text=True, **kw
+    )
+    if result.stdout:
+        print(result.stdout, end="")
+    if result.stderr:
+        print(result.stderr, end="")
+    return result
+
+
+print(f"cwd: {Path.cwd()}\n")
 result = sh("python scripts/verify_env.py")
+
 if result.returncode != 0:
     print(
         "\n"
         + "=" * 60
-        + "\nVerification failed. Read the FAIL / MISS / DRIFT lines above.\n\n"
-        "  no CUDA device  -> Runtime > Change runtime type > T4 GPU\n"
-        "  DRIFT on a pin  -> Runtime > Restart session, re-run from the\n"
-        "                     pip install cell (new versions need a fresh\n"
-        "                     interpreter)\n"
-        "  MISS a package  -> the pip install cell did not finish; re-run it\n"
+        + "\nVerification failed. Read the FAIL / MISS / DRIFT / ERROR line.\n\n"
+        "  no CUDA device   -> Runtime > Change runtime type > T4 GPU\n"
+        "  DRIFT on a pin   -> re-run the install cell, restart, retry\n"
+        "  MISS a package   -> the install cell did not finish; re-run it\n"
+        "  ERROR on import  -> installed but broken. For bitsandbytes this\n"
+        "                      means no CUDA binary for this torch build:\n"
+        "                      pip install -U 'bitsandbytes>=0.46.1'\n"
+        "  4-bit matmul     -> same fix as above, then restart\n"
         + "=" * 60
     )
     raise SystemExit("Environment verification failed — see above.")
+
+print("\n✓ Environment verified.")
 
 # %%
 # --- 4. Download the datasets -------------------------------------------

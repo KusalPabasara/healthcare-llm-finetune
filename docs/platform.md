@@ -61,6 +61,31 @@ MyDrive/healthcare-llm/
 Day 12 (KAN-59) asks for final models on a shared Drive — this layout matches that
 directly, which the Kaggle route did not.
 
+## The restart rule
+
+Colab preloads its own versions of `torch`, `transformers`, and `bitsandbytes`.
+Installing a pin writes the new version to disk, but **the already-imported module
+stays in memory for the life of the interpreter**. Verifying in the same cell as the
+install therefore tests the old module and reports a failure that is already fixed.
+
+So any cell that installs is followed by **Runtime → Restart session**, and
+verification happens after. The Day 1 notebook is split into `3a` (install, report,
+stop) and `3b` (verify) for exactly this reason.
+
+A restart clears the working directory, unmounts Drive, and drops every import — so
+cell `3b` re-mounts Drive, re-enters the project directory, and redefines its helpers.
+Any cell intended to run after a restart must do the same.
+
+### Known trap: bitsandbytes and CUDA
+
+Colab ships torch built against CUDA 12.8. **bitsandbytes 0.45.x has no cu128
+binary** — it imports without error and silently has no GPU support, so QLoRA fails
+only when training starts. cu128 builds begin at 0.45.3; this project pins 0.46.1.
+
+Constructing a `BitsAndBytesConfig` succeeds even when this is broken, because it is
+just a dataclass. The honest check is running an `nf4 Linear4bit` matmul on the GPU,
+which `scripts/verify_env.py` does.
+
 ## Session hygiene
 
 1. Mount Drive as the **first** cell, every time.
