@@ -43,12 +43,15 @@ Record these once, then never change them mid-sprint. Drift here invalidates the
 - [ ] Record GPU type + compute dtype in Frozen decisions
 - [x] **Pin exact versions → `requirements.txt`** (silent bumps change later numbers)
 - [x] Create project folder structure
-- [ ] Find/attach healthcare datasets (Kaggle hosts many natively)
-- [ ] Save raw copies to `data/raw/` — **treat as read-only for the whole sprint**
-- [ ] Record dataset licences/sources → `data/raw/SOURCES.md` (master report needs them)
-- [ ] Generate `data/raw/CHECKSUMS.txt` after download (proves raw data never changed)
+- [x] Select datasets — **MedMCQA** (apache-2.0) + **PubMedQA** (MIT), both commercial-safe
+- [x] Automate download → `scripts/download_data.py` (tested: 187,005 + 1,000 rows)
+- [x] Provenance + licence check automated → regenerates `data/raw/SOURCES.md`
+- [x] Checksum generation + `--verify` tamper detection (both tested)
+- [ ] **Run it on Kaggle** — the notebook does this; data must land in the session
 - [x] Write README + `docs/kaggle-setup.md`
+- [x] Build the Day 1 notebook → `notebooks/day1_setup.py` (validated nbformat)
 - [ ] Push raw data to a private Kaggle Dataset (**nothing survives the session otherwise**)
+- [ ] Add `GITHUB_TOKEN`, `KAGGLE_USERNAME`, `KAGGLE_KEY` to notebook Secrets
 - [ ] **Lead:** post exact versions + folder layout to team channel, ask all lanes to match
 
 **Notes:**
