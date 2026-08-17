@@ -23,8 +23,10 @@ Record these once, then never change them mid-sprint. Drift here invalidates the
 | Split ratio | 80 / 10 / 10 | Day 2 |
 | Eval harness path | _TBD_ | Day 3 |
 | Manual question set (fixed) | _TBD_ | Day 3 |
-| transformers version | _TBD_ | Day 1 |
-| Base model IDs (Qwen / Llama) | _TBD_ | Day 1 |
+| transformers version | **4.57.6** (not 5.x — see Day 1 notes) | Day 1 ✓ |
+| peft / bitsandbytes | **0.14.0** / **0.45.0** | Day 1 ✓ |
+| Base model IDs (Qwen / Llama) | _TBD — record from Colab_ | Day 1 |
+| GPU + VRAM | _TBD — `verify_env.py` prints it_ | Day 1 |
 | Embedding model (RAG) | _TBD_ | Day 9 |
 
 ---
@@ -32,17 +34,25 @@ Record these once, then never change them mid-sprint. Drift here invalidates the
 ## Day 1 — Mon 17 Aug · KAN-11 · Environment Setup + Data Collection
 
 - [ ] Colab open, GPU enabled, Drive mounted
-- [ ] Install `transformers datasets accelerate peft bitsandbytes`
-- [ ] **Pin exact versions → `requirements.txt`** (silent bumps change later numbers)
-- [ ] Create project folder structure
+- [ ] Install `transformers datasets accelerate peft bitsandbytes` → run `python scripts/verify_env.py`
+- [x] **Pin exact versions → `requirements.txt`** (silent bumps change later numbers)
+- [x] Create project folder structure
 - [ ] Download healthcare datasets
 - [ ] Save raw copies to `data/raw/` — **treat as read-only for the whole sprint**
-- [ ] Record dataset licences/sources (master report needs them)
-- [ ] Write README
+- [ ] Record dataset licences/sources → `data/raw/SOURCES.md` (master report needs them)
+- [ ] Generate `data/raw/CHECKSUMS.txt` after download (proves raw data never changed)
+- [x] Write README
 - [ ] Back up everything to Drive
 - [ ] **Lead:** post exact versions + folder layout to team channel, ask all lanes to match
 
 **Notes:**
+- Repo: https://github.com/KusalPabasara/healthcare-llm-finetune (private)
+- Pinned `transformers` to **4.57.6**, not 5.x. 5.x is current but has breaking API
+  changes from 4.x that most QLoRA tutorials/peft paths don't account for yet.
+  Deliberate choice — revisit after the sprint, never during.
+- `scripts/verify_env.py` checks pins + GPU + 4-bit config and prints the values to
+  paste into Frozen decisions. It exits non-zero on drift.
+- Remaining Day 1 work is Colab-side: install, download data, back up to Drive.
 
 ---
 
