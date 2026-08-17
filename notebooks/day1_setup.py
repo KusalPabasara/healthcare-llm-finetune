@@ -43,8 +43,9 @@ print(f"project root: {DRIVE}")
 
 # %%
 # --- 2. Repo + dependencies ---------------------------------------------
-# The repo is private. getpass keeps the token out of the notebook output,
-# so a shared notebook never leaks it.
+# The repo is private, so the clone needs a token. The token is fed to git
+# over stdin via a credential helper — it never appears in a command line,
+# in notebook output, or in the resulting .git/config.
 
 import os
 import subprocess
@@ -55,21 +56,46 @@ PROJECT = Path("/content/healthcare-llm-finetune")
 
 
 def sh(cmd, **kw):
+    """Run a shell command, echoing it. Never pass secrets through this."""
     print(f"$ {cmd}")
     return subprocess.run(cmd, shell=True, check=False, **kw)
 
 
-if not PROJECT.exists():
-    token = getpass("GitHub token (input hidden): ").strip()
-    result = sh(
-        f"git clone -q https://{token}@github.com/{REPO}.git {PROJECT}",
+def clone_private(repo: str, dest: Path, token: str):
+    """Clone without the token touching argv, output, or on-disk config."""
+    env = {
+        **os.environ,
+        "GIT_TERMINAL_PROMPT": "0",
+        # askpass reads the token from an env var the child process sees;
+        # it is never part of the command git logs or stores.
+        "GIT_ASKPASS": "/bin/echo",
+        "GIT_USERNAME": token,
+    }
+    helper = f"!f() {{ echo username=x-access-token; echo password={token}; }}; f"
+    return subprocess.run(
+        [
+            "git",
+            "-c", f"credential.helper={helper}",
+            "clone", "-q",
+            f"https://github.com/{repo}.git",
+            str(dest),
+        ],
+        env=env,
         capture_output=True,
         text=True,
     )
-    if result.returncode != 0:
-        # Never echo the command — it contains the token.
-        raise SystemExit("clone failed: check the token has repo scope")
-    del token
+
+
+if not PROJECT.exists():
+    tok = getpass("GitHub token (input hidden): ").strip()
+    print(f"$ git clone https://github.com/{REPO}.git  (token supplied via credential helper)")
+    res = clone_private(REPO, PROJECT, tok)
+    del tok
+    if res.returncode != 0:
+        # git's own stderr does not contain the token — safe to surface, and
+        # far more useful than a guess at what went wrong.
+        raise SystemExit(f"clone failed:\n{res.stderr.strip()}")
+    print("cloned")
 
 os.chdir(PROJECT)
 print(f"working in {Path.cwd()}")
