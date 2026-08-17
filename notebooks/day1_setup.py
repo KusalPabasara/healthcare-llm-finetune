@@ -46,14 +46,29 @@ PROJECT = Path("/content/healthcare-llm-finetune")
 DRIVE = Path("/content/drive/MyDrive/healthcare-llm")
 RAW = DRIVE / "data" / "raw"
 
-PINS = {
-    "transformers": "4.57.6",
-    "datasets": "3.2.0",
-    "accelerate": "1.2.1",
-    "peft": "0.14.0",
-    "bitsandbytes": "0.46.1",
-    "trl": "0.13.0",
-}
+CRITICAL = ("transformers", "datasets", "accelerate", "peft", "bitsandbytes", "trl")
+
+
+def load_pins(req: Path) -> dict:
+    """Read pins from requirements.txt — never hardcode them here.
+
+    A second copy of the version numbers drifts the moment a pin changes,
+    and then this cell reports a mismatch against a version nobody uses.
+    """
+    pins = {}
+    if not req.exists():
+        return pins
+    for line in req.read_text().splitlines():
+        line = line.split("#")[0].strip()
+        if "==" not in line:
+            continue
+        name, _, version = line.partition("==")
+        if name.strip().lower() in CRITICAL:
+            pins[name.strip().lower()] = version.strip()
+    return pins
+
+
+PINS = load_pins(PROJECT / "requirements.txt")
 
 print("Day 1 status\n" + "=" * 56)
 
@@ -63,17 +78,22 @@ print(f"  {'ok ' if drive_ok else '-- '} Drive mounted")
 repo_ok = PROJECT.exists()
 print(f"  {'ok ' if repo_ok else '-- '} Repo cloned")
 
-pins_ok, wrong = True, []
-for pkg, want in PINS.items():
-    try:
-        if md.version(pkg) != want:
+if not PINS:
+    # No repo yet, so requirements.txt is unreadable. Cell 2 fixes that.
+    pins_ok, wrong = False, []
+    print("  --  Pinned packages  (repo not cloned yet — run cell 2)")
+else:
+    pins_ok, wrong = True, []
+    for pkg, want in PINS.items():
+        try:
+            if md.version(pkg) != want:
+                pins_ok = False
+                wrong.append(pkg)
+        except md.PackageNotFoundError:
             pins_ok = False
             wrong.append(pkg)
-    except md.PackageNotFoundError:
-        pins_ok = False
-        wrong.append(pkg)
-print(f"  {'ok ' if pins_ok else '-- '} Pinned packages" +
-      ("" if pins_ok else f"  ({len(wrong)} wrong/missing)"))
+    print(f"  {'ok ' if pins_ok else '-- '} Pinned packages" +
+          ("" if pins_ok else f"  ({len(wrong)} wrong/missing: {', '.join(wrong)})"))
 
 gpu_ok = False
 try:
@@ -211,16 +231,18 @@ print(subprocess.run(["git", "log", "--oneline", "-1"],
 res = sh("pip install -r requirements.txt 2>&1 | tail -25")
 
 # pip can exit 0 having skipped packages, so check what actually landed.
+# Expected versions come from requirements.txt — the same file just installed,
+# so this can never disagree with what was asked for.
 import importlib.metadata as md
 
-EXPECTED = {
-    "transformers": "4.57.6",
-    "datasets": "3.2.0",
-    "accelerate": "1.2.1",
-    "peft": "0.14.0",
-    "bitsandbytes": "0.46.1",
-    "trl": "0.13.0",
-}
+CRITICAL = ("transformers", "datasets", "accelerate", "peft", "bitsandbytes", "trl")
+EXPECTED = {}
+for line in (PROJECT / "requirements.txt").read_text().splitlines():
+    line = line.split("#")[0].strip()
+    if "==" in line:
+        name, _, version = line.partition("==")
+        if name.strip().lower() in CRITICAL:
+            EXPECTED[name.strip().lower()] = version.strip()
 
 print("\non disk after install:")
 missing = []

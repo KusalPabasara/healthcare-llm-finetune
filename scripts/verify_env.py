@@ -13,16 +13,39 @@ import platform
 import sys
 from pathlib import Path
 
-PINNED = {
-    "transformers": "4.57.6",
-    "datasets": "3.2.0",
-    "accelerate": "1.2.1",
-    "peft": "0.14.0",
-    "bitsandbytes": "0.45.0",
-    "trl": "0.13.0",
-}
-
 DRIVE = Path("/content/drive/MyDrive/healthcare-llm")
+
+# Packages whose exact version affects training results. Versions are read
+# from requirements.txt rather than duplicated here: a hardcoded copy drifts
+# the moment a pin changes, and then the checker reports a failure against a
+# version nobody uses any more.
+CRITICAL = ("transformers", "datasets", "accelerate", "peft", "bitsandbytes", "trl")
+
+REQUIREMENTS = Path(__file__).resolve().parent.parent / "requirements.txt"
+
+
+def load_pins(path: Path = REQUIREMENTS) -> dict:
+    """Parse `name==version` lines from requirements.txt."""
+    if not path.exists():
+        sys.exit(f"error: {path} not found — run from the repo, not a copy of this script")
+
+    pins = {}
+    for line in path.read_text().splitlines():
+        line = line.split("#")[0].strip()
+        if "==" not in line:
+            continue
+        name, _, version = line.partition("==")
+        name = name.strip().lower()
+        if name in CRITICAL:
+            pins[name] = version.strip()
+
+    absent = [p for p in CRITICAL if p not in pins]
+    if absent:
+        sys.exit(f"error: {path.name} has no pin for: {', '.join(absent)}")
+    return pins
+
+
+PINNED = load_pins()
 
 
 def on_colab():
