@@ -112,19 +112,24 @@ print("=" * 56)
 
 todo = []
 if not drive_ok:
-    todo.append("1  mount Drive")
+    todo.append("cell 1     mount Drive")
 if not repo_ok:
-    todo.append("2  clone the repo")
+    todo.append("cell 2     clone the repo")
 elif drive_ok:
-    todo.append("2  pull latest (fast, always worth it)")
+    todo.append("cell 2     pull latest (fast, always worth it)")
 if not pins_ok:
-    todo.append("3  install pins, then 4, then RESTART, then 5")
+    # One step per line. Collapsing these onto one line is how the restart
+    # gets skipped, and then cell 5 fails for a reason that looks unrelated.
+    todo.append("cell 3     install the pins  (~3-5 min)")
+    todo.append("cell 4     confirm what landed on disk")
+    todo.append("RESTART    Runtime > Restart session   <- required")
+    todo.append("cell 5     verify")
 elif not gpu_ok:
-    todo.append("5  verify (GPU not detected — check Runtime type)")
+    todo.append("cell 5     verify (GPU not detected — check Runtime type)")
 else:
-    todo.append("5  verify")
+    todo.append("cell 5     verify")
 if not data_ok:
-    todo.append("6-8  download datasets")
+    todo.append("cells 6-8  download datasets")
 
 if data_ok and pins_ok and gpu_ok:
     print("\nEverything is in place. Run cell 5 to confirm, then cell 9.")
@@ -327,6 +332,30 @@ def sh(cmd, **kw):
 
 
 print(f"cwd: {Path.cwd()}\n")
+
+# Refuse early if the install has not run in this session. Otherwise this
+# cell prints a full diagnostic report whose only real finding is "you
+# skipped cell 3", which buries the actual instruction.
+import importlib.metadata as _md
+
+_missing = []
+for _pkg in ("bitsandbytes", "trl"):
+    try:
+        _md.version(_pkg)
+    except _md.PackageNotFoundError:
+        _missing.append(_pkg)
+
+if _missing:
+    raise SystemExit(
+        f"{', '.join(_missing)} not installed — the install has not run in this session.\n\n"
+        "  This is a fresh Colab VM. Drive data is safe; packages are not.\n\n"
+        "  Do this, in order:\n"
+        "    1. Run cell 3   (install, ~3-5 min)\n"
+        "    2. Run cell 4   (confirms what landed on disk)\n"
+        "    3. Runtime > Restart session\n"
+        "    4. Run this cell again\n"
+    )
+
 result = sh("python scripts/verify_env.py")
 
 if result.returncode != 0:
