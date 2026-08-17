@@ -187,9 +187,12 @@ Everyone runs the same 12-day shape, on the same dates, with the same due dates.
 |---|---|---|---|
 | Healthcare | **Kusal Pabasara** | `qwen-healthcare-v#`, `llama-healthcare-v#` | KAN-11 → KAN-59 |
 | Finance | **Navodya Dissanayake** | `qwen-finance-v#`, `llama-finance-v#` | KAN-12 → KAN-60 |
-| SME Daily Business | **Deepana Nirmal** | `qwen-sme-v#`, `llama-sme-v#` **[NEEDS CONFIRMATION]** | KAN-13 → KAN-61 |
+| SME Daily Business | **Deepana Nirmal** | `qwen-sme-v#`, `llama-sme-v#` | KAN-13 → KAN-61 |
 | Retail / E-commerce / Manufacturing | **Rimaz Nowfel** | `qwen-retail-v#`, `llama-retail-v#` | KAN-14 → KAN-62 |
 | Retail lane support | **Thisal Sooriyanayaka** | — | Days 3, 4, 8, 9 |
+
+**[NEEDS CONFIRMATION]** Deepana's industry is disputed between the board and the scope
+document, so her model names are provisional.
 
 Because the lanes are synchronised, **any problem you hit on Day N, three other people hit
 the same day.** Post fixes in the team channel — ten minutes of writing saves the team hours.
@@ -405,8 +408,9 @@ Checked against dataset pages on 17 Aug 2026. Verify again before you use them.
   request — ask early if you want it.
 
 **Retail / E-commerce / Manufacturing — Rimaz & Thisal**
-- `bitext/Bitext-retail-ecommerce-llm-chatbot-training-dataset` — CDLA-Sharing-1.0, share-alike —
-  44.8k instruction/response pairs. Commercial use permitted **but share-alike** — confirm
+- **Bitext retail e-commerce chatbot dataset** — CDLA-Sharing-1.0, share-alike — 44.8k
+  instruction/response pairs. On Hugging Face as
+  `bitext/Bitext-retail-ecommerce-llm-chatbot-training-dataset`. Commercial use permitted **but share-alike** — confirm
   with whoever owns licensing before building v1 on it.
 
 **SME Daily Business — Deepana**

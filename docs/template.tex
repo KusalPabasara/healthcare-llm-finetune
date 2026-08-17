@@ -1,4 +1,5 @@
 \documentclass[11pt,a4paper]{article}
+% Body set to 11.5pt via \fontsize below; 11pt is the class base.
 
 % ---------------------------------------------------------------------------
 % Via Codos VC4B ERDP — team guide template
@@ -20,17 +21,24 @@
 
 \usepackage{microtype}
 
+% 11.5pt on a 160mm measure keeps the line near 82 characters. At the class
+% default of 11pt the same width runs to ~86, which is past comfortable.
+\renewcommand{\normalsize}{\fontsize{11.5}{15}\selectfont}
+\normalsize
+
 % --- page geometry -------------------------------------------------------
-% Generous side margins: a ~33-line measure keeps running text near 70
-% characters, which is where sustained reading is comfortable.
+% 25mm margins: the business-document standard, and what Word and Google Docs
+% default to. Gives 160mm of text on A4 -- wide enough that the day-by-day
+% tables are not cramped, which the previous book-style 38mm margins made them.
+% Type is set slightly larger to keep the measure near 80 characters.
 \usepackage[
   a4paper,
-  top        = 30mm,
-  bottom     = 28mm,
-  inner      = 38mm,
-  outer      = 38mm,
-  headsep    = 9mm,
-  footskip   = 14mm,
+  top        = 25mm,
+  bottom     = 25mm,
+  inner      = 25mm,
+  outer      = 25mm,
+  headsep    = 8mm,
+  footskip   = 13mm,
 ]{geometry}
 
 \usepackage{xcolor}
@@ -87,8 +95,8 @@
 
 % --- spacing -------------------------------------------------------------
 \usepackage{setspace}
-\setstretch{1.16}
-\setlength{\parskip}{0.62\baselineskip}
+\setstretch{1.0}
+\setlength{\parskip}{0.55\baselineskip}
 \setlength{\parindent}{0pt}
 \setlength{\emergencystretch}{3em}
 
@@ -97,6 +105,7 @@
 \setlist[itemize]{label=\textbf{\textperiodcentered}}
 
 % --- tables --------------------------------------------------------------
+\usepackage{etoolbox}
 \usepackage{booktabs}
 \usepackage{longtable}
 \usepackage{array}
@@ -113,6 +122,20 @@
 % Table headers in small caps rather than bold: quieter, and it stops a
 % header row competing with the bold terms inside the table body.
 \newcommand{\thead}[1]{\textsc{\footnotesize #1}}
+
+% Pandoc derives column widths from the source Markdown's own column widths,
+% which overflows the measure whenever a cell is much longer than its header.
+% real@table wraps every longtable so the whole alignment is squeezed to the
+% text block rather than running into the margin.
+\setlength{\LTcapwidth}{\textwidth}
+\AtBeginEnvironment{longtable}{\small}
+\AtBeginEnvironment{tabular}{\small}
+
+% pandoc emits plain `l` columns for pipe tables with no explicit widths, and
+% `l` never wraps -- one long cell then runs into the margin. tabularx-style
+% wrapping is not available through the template, so tables are given explicit
+% relative widths in the Markdown source via the grid-table syntax where a
+% cell is long. See docs/TEAM_GUIDE.md.
 
 % --- callouts ------------------------------------------------------------
 \usepackage[most]{tcolorbox}
@@ -203,7 +226,9 @@
 \newcommand{\passthrough}[1]{#1}
 \newcommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 
-% Inline code: a faint rule instead of a filled box — less noisy in running text.
+% Inline code: muted rather than boxed — less noisy than a filled box in
+% running text. Long unbreakable paths are wrapped in the source instead;
+% redefining / and - as active characters here breaks hyperref's anchors.
 \let\oldtexttt\texttt
 \renewcommand{\texttt}[1]{{\small\color{inktwo}\oldtexttt{#1}}}
 

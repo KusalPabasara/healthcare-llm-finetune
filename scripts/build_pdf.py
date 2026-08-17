@@ -40,6 +40,82 @@ def strip_front_matter(text: str) -> str:
     return text
 
 
+def widen_tables(text: str) -> str:
+    """Convert pipe tables to grid tables so long cells wrap.
+
+    pandoc renders a pipe table as plain `l` columns regardless of the dashes
+    in the separator row, and `l` never wraps -- a long cell simply runs past
+    the margin. Grid tables are the only syntax that makes pandoc emit
+    proportional `p{}` columns, so wide tables are rewritten into grid form
+    with widths proportional to their longest cell.
+    """
+    lines = text.splitlines()
+    out, i = [], 0
+
+    while i < len(lines):
+        sep = re.fullmatch(r"\s*\|(?:\s*:?-+:?\s*\|)+\s*", lines[i] or "")
+        header = lines[i - 1] if i else ""
+        if sep and header.strip().startswith("|"):
+            rows = [header]
+            j = i + 1
+            while j < len(lines) and lines[j].strip().startswith("|"):
+                rows.append(lines[j])
+                j += 1
+
+            cells = [[c.strip() for c in r.split("|")[1:-1]] for r in rows]
+            ncol = len(cells[0])
+            cells = [c for c in cells if len(c) == ncol]
+            if ncol < 2:
+                out.append(lines[i])
+                i += 1
+                continue
+
+            # Width each column by its longest cell, then scale to the measure.
+            longest = [max(len(r[c]) for r in cells) for c in range(ncol)]
+            budget = 96 - (3 * ncol)
+            total = sum(longest) or 1
+            widths = [max(9, round(w / total * budget)) for w in longest]
+
+            def rule(ch):
+                return "+" + "+".join(ch * (w + 2) for w in widths) + "+"
+
+            def row(vals):
+                # Wrap each cell to its column width, emitting continuation
+                # lines so the grid stays valid.
+                import textwrap
+
+                wrapped = [
+                    textwrap.wrap(v, w) or [""] for v, w in zip(vals, widths)
+                ]
+                height = max(len(x) for x in wrapped)
+                lines_out = []
+                for k in range(height):
+                    parts = []
+                    for c in range(ncol):
+                        piece = wrapped[c][k] if k < len(wrapped[c]) else ""
+                        parts.append(" " + piece.ljust(widths[c]) + " ")
+                    lines_out.append("|" + "|".join(parts) + "|")
+                return lines_out
+
+            if out and out[-1] == header:
+                out.pop()
+            out.append(rule("-"))
+            out.extend(row(cells[0]))
+            out.append(rule("="))
+            for r in cells[1:]:
+                out.extend(row(r))
+                out.append(rule("-"))
+
+            out.append("")
+            i = j
+            continue
+
+        out.append(lines[i])
+        i += 1
+
+    return "\n".join(out) + "\n"
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("source", type=Path)
@@ -56,7 +132,7 @@ def main():
             sys.exit(f"error: {tool} not installed")
 
     out = args.output or args.source.with_suffix(".pdf")
-    body = strip_front_matter(args.source.read_text())
+    body = widen_tables(strip_front_matter(args.source.read_text()))
 
     with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as fh:
         fh.write(body)
@@ -64,7 +140,8 @@ def main():
 
     cmd = [
         "pandoc", str(tmp),
-        "-f", "gfm",
+        # grid tables (from widen_tables) need the pandoc reader, not gfm
+        "-f", "markdown",
         "--template", str(TEMPLATE),
         "--pdf-engine", "xelatex",
         "--toc", "--toc-depth", "2",
