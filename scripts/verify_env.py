@@ -37,16 +37,26 @@ def check_versions():
     for name, want in PINNED.items():
         try:
             mod = importlib.import_module(name)
-            got = getattr(mod, "__version__", "unknown")
-            found[name] = got
-            if got == want:
-                print(f"  ok    {name:<16} {got}")
-            else:
-                print(f"  DRIFT {name:<16} {got}  (pinned {want})")
-                ok = False
         except ImportError:
             print(f"  MISS  {name:<16} not installed")
             found[name] = None
+            ok = False
+            continue
+        except Exception as exc:  # noqa: BLE001
+            # bitsandbytes raises non-ImportError when its CUDA binary is
+            # missing. Reporting that as "not installed" sends you looking
+            # for the wrong problem.
+            print(f"  ERROR {name:<16} imported but broken: {type(exc).__name__}")
+            found[name] = None
+            ok = False
+            continue
+
+        got = getattr(mod, "__version__", "unknown")
+        found[name] = got
+        if got == want:
+            print(f"  ok    {name:<16} {got}")
+        else:
+            print(f"  DRIFT {name:<16} {got}  (pinned {want})")
             ok = False
     return ok, found
 
@@ -61,6 +71,8 @@ def check_gpu():
         return False, {}
 
     print(f"  torch            {torch.__version__}")
+    if torch.version.cuda:
+        print(f"  cuda             {torch.version.cuda}")
     if not torch.cuda.is_available():
         print("  FAIL  no CUDA device")
         print("        Colab: Runtime > Change runtime type > T4 GPU")
@@ -89,6 +101,12 @@ def check_gpu():
 
 
 def check_bnb(compute_dtype="fp16"):
+    """Actually quantize on the GPU.
+
+    Constructing a BitsAndBytesConfig proves nothing — it is a dataclass and
+    succeeds even when bitsandbytes has no CUDA binary. The only honest check
+    is to put a real tensor through a 4-bit layer on the device.
+    """
     print("\n4-bit quantization")
     print("-" * 52)
     try:
@@ -102,10 +120,40 @@ def check_bnb(compute_dtype="fp16"):
             bnb_4bit_compute_dtype=dtype,
             bnb_4bit_use_double_quant=True,
         )
-        print(f"  ok    BitsAndBytesConfig constructs (nf4, {compute_dtype} compute)")
+        print(f"  ok    BitsAndBytesConfig constructs (nf4, {compute_dtype})")
+    except Exception as exc:  # noqa: BLE001
+        print(f"  FAIL  config: {type(exc).__name__}: {exc}")
+        return False
+
+    try:
+        import bitsandbytes as bnb
+        import torch
+    except Exception as exc:  # noqa: BLE001
+        print(f"  FAIL  bitsandbytes unusable: {type(exc).__name__}: {exc}")
+        return False
+
+    print(f"  ok    bitsandbytes    {getattr(bnb, '__version__', 'unknown')}")
+
+    if not torch.cuda.is_available():
+        print("  SKIP  no GPU — cannot verify quantization actually runs")
+        return False
+
+    try:
+        linear = bnb.nn.Linear4bit(
+            64, 64, bias=False, compute_dtype=torch.float16, quant_type="nf4"
+        ).cuda()
+        out = linear(torch.randn(2, 64, device="cuda", dtype=torch.float16))
+        torch.cuda.synchronize()
+        if out.shape != (2, 64):
+            print(f"  FAIL  unexpected output shape {tuple(out.shape)}")
+            return False
+        print("  ok    4-bit matmul runs on GPU (nf4 Linear4bit verified)")
         return True
-    except Exception as exc:  # noqa: BLE001 - surface whatever went wrong
-        print(f"  FAIL  {type(exc).__name__}: {exc}")
+    except Exception as exc:  # noqa: BLE001
+        msg = str(exc).split("\n")[0][:120]
+        print(f"  FAIL  4-bit matmul: {type(exc).__name__}: {msg}")
+        print("        bitsandbytes has no CUDA binary for this torch build.")
+        print("        Fix: pip install -U 'bitsandbytes>=0.46.1'")
         return False
 
 
